@@ -6,6 +6,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+	<PublishSingleFile>true</PublishSingleFile>
+	<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+	<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+	<DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>True</Optimize>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,14 +1,17 @@
-﻿using Newtonsoft.Json;
-using System.IO;
+﻿using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace MajdataPlayUpdater;
 
 public class UpdateManager(string apiResponse, string baseLocalPath, string baseDownloadUrl)
 {
     public event Action<string> LogMessage;
-    private List<AssetInfo>? assets = JsonConvert.DeserializeObject<List<AssetInfo>>(apiResponse);
+    private readonly List<AssetInfo>? assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true
+    });
 
     public async Task PerformUpdateAsync()
     {

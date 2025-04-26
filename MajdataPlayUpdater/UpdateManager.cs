@@ -8,10 +8,10 @@ namespace MajdataPlayUpdater;
 public class UpdateManager(string apiResponse, string baseLocalPath, string baseDownloadUrl)
 {
     public event Action<string> LogMessage;
+    private List<AssetInfo>? assets = JsonConvert.DeserializeObject<List<AssetInfo>>(apiResponse);
 
     public async Task PerformUpdateAsync()
     {
-        var assets = JsonConvert.DeserializeObject<List<AssetInfo>>(apiResponse);
         LogMessage?.Invoke($"开始处理版本更新");
 
         foreach (var asset in assets)
@@ -21,11 +21,26 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
         LogMessage?.Invoke("更新处理完成");
     }
-    
+
+    public async Task CheckUpdateAsync()
+    {
+        LogMessage?.Invoke($"开始检查版本更新");
+
+        await Task.Run(() =>
+        {
+            if (assets.Any(CheckAsset))
+            {
+                LogMessage?.Invoke("有更新");
+            }
+        });
+
+        LogMessage?.Invoke("更新检查完成");
+    }
+
     private async Task ProcessAssetAsync(AssetInfo asset)
     {
-        var localFilePath = Path.Combine(baseLocalPath, asset.RelativePath.TrimStart('/'), asset.Name);
-        var downloadUrl = baseDownloadUrl + asset.RelativePath + "/" + asset.Name;
+        var localFilePath = Path.Combine(baseLocalPath, asset.RelativePath.TrimStart('/'));
+        var downloadUrl = baseDownloadUrl + asset.RelativePath;
 
         if (!File.Exists(localFilePath))
         {
@@ -47,7 +62,21 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
         }
     }
 
-    private string CalculateFileHash(string filePath)
+    private bool CheckAsset(AssetInfo asset)
+    {
+        var localFilePath = Path.Combine(baseLocalPath, asset.RelativePath.TrimStart('/'));
+
+        if (!File.Exists(localFilePath))
+        {
+            return true;
+        }
+
+        var localHash = CalculateFileHash(localFilePath);
+
+        return !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase); 
+    }
+
+    public static string CalculateFileHash(string filePath)
     {
         using var sha256 = SHA256.Create();
         using var stream = File.OpenRead(filePath);
@@ -71,10 +100,13 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
             }
 
             var downloadedHash = CalculateFileHash(destinationPath + ".tmp");
+
             if (!string.Equals(downloadedHash, expectedHash, StringComparison.OrdinalIgnoreCase))
             {
-                File.Delete(destinationPath + ".tmp");
-                throw new Exception($"文件哈希不匹配: {destinationPath}");
+                if (destinationPath.EndsWith(".json"))
+                    LogMessage?.Invoke($"下载错误, 文件哈希不匹配: {destinationPath}, 但是是Json文件, 可能是换行空格等格式导致的, 因此不处理本错误");
+                else
+                    throw new Exception($"下载错误, 文件哈希不匹配: {destinationPath}, 下载哈希: {downloadedHash}, 期待哈希: {expectedHash}");
             }
 
             if (File.Exists(destinationPath))

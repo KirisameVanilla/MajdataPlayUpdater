@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace MajdataPlayUpdater;
 
 public class AssetInfo
 {
-    [JsonProperty(nameof(Name))]
+    [JsonPropertyName(nameof(Name))]
     public required string Name { get; set; }
 
-    [JsonProperty(nameof(SHA256))]
+    [JsonPropertyName(nameof(SHA256))]
     public required string SHA256 { get; set; }
 
-    [JsonProperty(nameof(RelativePath))]
+    [JsonPropertyName(nameof(RelativePath))]
     public required string RelativePath { get; set; }
 }

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
@@ -86,7 +86,7 @@ public partial class MainWindow : Window
                 foreach (var file in Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories))
                 {
                     string relativePath = Path.GetRelativePath(rootPath, file).Replace("\\", "/");
-                    if (relativePath == "Nightly.json" || relativePath == "Stable.json" || relativePath == "Newtonsoft.Json.dll" || relativePath.Contains("MajdataPlayUpdater")) continue; // 跳过
+                    if (relativePath == "Nightly.json" || relativePath == "Stable.json" || relativePath.Contains("MajdataPlayUpdater")) continue; // 跳过
 
                     string sha256 = UpdateManager.CalculateFileHash(file);
 
@@ -102,7 +102,10 @@ public partial class MainWindow : Window
                 }
             });
 
-            var json = JsonConvert.SerializeObject(assets, Formatting.Indented);
+            var json = JsonSerializer.Serialize(assets, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
 
             await Task.Run(() => File.WriteAllText(Path.Combine(rootPath, $"{releaseType}.json"), json));
 

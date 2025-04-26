@@ -26,11 +26,30 @@ public partial class MainWindow : Window
         _logScrollViewer = GetScrollViewer(txtLog);
     }
 
+    private void DisableUiEvents()
+    {
+        btnPerformUpdate.IsEnabled = false;
+        btnCheckUpdate.IsEnabled = false;
+        btnGenerateJson.IsEnabled = false;
+        btnEnsureProxy.IsEnabled = false;
+        cmbReleaseType.IsEnabled = false;
+    }
+
+    private void EnableUiEvents()
+    {
+        btnPerformUpdate.IsEnabled = true;
+        btnCheckUpdate.IsEnabled = true;
+        btnGenerateJson.IsEnabled = true;
+        btnEnsureProxy.IsEnabled = true;
+        cmbReleaseType.IsEnabled = true;
+    }
+
     private async void BtnPerformUpdate_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            btnPerformUpdate.IsEnabled = false;
+            DisableUiEvents();
+
             progressBar.IsIndeterminate = true;
 
             var releaseType = ((ComboBoxItem)cmbReleaseType.SelectedItem).Content.ToString() ?? "Nightly";
@@ -47,7 +66,8 @@ public partial class MainWindow : Window
         }
         finally
         {
-            btnPerformUpdate.IsEnabled = true;
+            EnableUiEvents();
+
             progressBar.IsIndeterminate = false;
         }
     }
@@ -56,7 +76,8 @@ public partial class MainWindow : Window
     {
         try
         {
-            btnCheckUpdate.IsEnabled = false;
+            DisableUiEvents();
+
             progressBar.IsIndeterminate = true;
 
             var releaseType = ((ComboBoxItem)cmbReleaseType.SelectedItem).Content.ToString() ?? "Nightly";
@@ -73,7 +94,8 @@ public partial class MainWindow : Window
         }
         finally
         {
-            btnCheckUpdate.IsEnabled = true;
+            EnableUiEvents();
+
             progressBar.IsIndeterminate = false;
         }
     }
@@ -82,7 +104,8 @@ public partial class MainWindow : Window
     {
         try
         {
-            btnGenerateJson.IsEnabled = false;
+            DisableUiEvents();
+
             progressBar.IsIndeterminate = true;
 
             var releaseType = ((ComboBoxItem)cmbReleaseType.SelectedItem).Content.ToString() ?? "Nightly";
@@ -125,7 +148,8 @@ public partial class MainWindow : Window
         }
         finally
         {
-            btnGenerateJson.IsEnabled = true;
+            EnableUiEvents();
+
             progressBar.IsIndeterminate = false;
         }
     }

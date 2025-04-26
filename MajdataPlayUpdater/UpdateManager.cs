@@ -7,17 +7,23 @@ namespace MajdataPlayUpdater;
 
 public class UpdateManager(string apiResponse, string baseLocalPath, string baseDownloadUrl)
 {
-    public event Action<string> LogMessage;
-    private readonly List<AssetInfo>? assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, new JsonSerializerOptions
+    public event Action<string>? LogMessage;
+    private readonly List<AssetInfo>? _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, new JsonSerializerOptions
     {
         PropertyNameCaseInsensitive = true
     });
 
     public async Task PerformUpdateAsync()
     {
-        LogMessage?.Invoke($"开始处理版本更新");
+        if (_assets == null)
+        {
+            LogMessage?.Invoke("服务器返回为空, 请稍后重试或检查网络环境");
+            return;
+        }
 
-        foreach (var asset in assets)
+        LogMessage?.Invoke("开始处理版本更新");
+
+        foreach (var asset in _assets)
         {
             await ProcessAssetAsync(asset);
         }
@@ -27,17 +33,18 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
     public async Task CheckUpdateAsync()
     {
-        LogMessage?.Invoke($"开始检查版本更新");
+        if (_assets == null)
+        {
+            LogMessage?.Invoke("服务器返回为空, 请稍后重试或检查网络环境");
+            return;
+        }
+
+        LogMessage?.Invoke("开始检查版本更新");
 
         await Task.Run(() =>
         {
-            if (assets.Any(CheckAsset))
-            {
-                LogMessage?.Invoke("有更新");
-            }
+            LogMessage?.Invoke(_assets.Any(CheckAsset)? "有更新": "无更新 (不检测文本文件, 如游戏运行有问题请当作有更新)");
         });
-
-        LogMessage?.Invoke("更新检查完成");
     }
 
     private async Task ProcessAssetAsync(AssetInfo asset)
@@ -56,7 +63,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
         if (!string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase))
         {
-            LogMessage?.Invoke($"文件哈希不匹配: {localFilePath} - 将更新");
+            LogMessage?.Invoke($"文件并非最新: {localFilePath} - 将更新");
             await DownloadFileAsync(downloadUrl, localFilePath, asset.SHA256);
         }
         else
@@ -76,7 +83,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
         var localHash = CalculateFileHash(localFilePath);
 
-        return !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase); 
+        return !(localFilePath.EndsWith(".json") || localFilePath.EndsWith(".meta") || localFilePath.EndsWith(".browser")) && !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase) ; 
     }
 
     public static string CalculateFileHash(string filePath)
@@ -106,10 +113,11 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
             if (!string.Equals(downloadedHash, expectedHash, StringComparison.OrdinalIgnoreCase))
             {
-                if (destinationPath.EndsWith(".json"))
-                    LogMessage?.Invoke($"下载错误, 文件哈希不匹配: {destinationPath}, 但是是Json文件, 可能是换行空格等格式导致的, 因此不处理本错误");
+                if (destinationPath.EndsWith(".json") || destinationPath.EndsWith(".meta") || destinationPath.EndsWith(".browser"))
+                    LogMessage?.Invoke($"警告: 下载文件哈希不匹配: {destinationPath}, 但是是文本文件, 可能是换行空格等格式导致的, 因此不处理本错误");
+                //TODO: 对于json和meta采用其他方式判断是否一致
                 else
-                    throw new Exception($"下载错误, 文件哈希不匹配: {destinationPath}, 下载哈希: {downloadedHash}, 期待哈希: {expectedHash}");
+                    throw new Exception($"错误: 下载文件哈希不匹配: {destinationPath}");
             }
 
             if (File.Exists(destinationPath))

@@ -1,8 +1,9 @@
-﻿using System.Text.Json;
-using System.IO;
+﻿using System.IO;
 using System.Net.Http;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace MajdataPlayUpdater;
 
@@ -12,10 +13,17 @@ namespace MajdataPlayUpdater;
 public partial class MainWindow : Window
 {
     private const string BaseApiUrl = "https://kirisamevanilla.github.io/dev/";
+    private ScrollViewer? _logScrollViewer;
 
     public MainWindow()
     {
         InitializeComponent();
+        Loaded += MainWindow_Loaded;
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        _logScrollViewer = GetScrollViewer(txtLog);
     }
 
     private async void BtnPerformUpdate_Click(object sender, RoutedEventArgs e)
@@ -85,10 +93,10 @@ public partial class MainWindow : Window
             {
                 foreach (var file in Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories))
                 {
-                    string relativePath = Path.GetRelativePath(rootPath, file).Replace("\\", "/");
+                    var relativePath = Path.GetRelativePath(rootPath, file).Replace("\\", "/");
                     if (relativePath == "Nightly.json" || relativePath == "Stable.json" || relativePath.Contains("MajdataPlayUpdater")) continue; // 跳过
 
-                    string sha256 = UpdateManager.CalculateFileHash(file);
+                    var sha256 = UpdateManager.CalculateFileHash(file);
 
                     lock (assets)
                     {
@@ -122,15 +130,44 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnLogMessageReceived(string message)
+    private void TxtProxy_TextChanged(object sender, TextChangedEventArgs e) => SetProxyHint.Visibility =
+        txtProxy.Text.Trim() == string.Empty ? Visibility.Visible : Visibility.Collapsed;
+
+    private void BtnEnsureProxy_Click(object sender, RoutedEventArgs e)
     {
-        Dispatcher.Invoke(() => AddLog(message));
+        App.RecreateHttpClientWithProxy(txtProxy.Text);
+        AddLog("代理设置切换为: " + (txtProxy.Text.Trim() == string.Empty ? "无代理" : txtProxy.Text));
     }
+
+    private void OnLogMessageReceived(string message) => Dispatcher.Invoke(() => AddLog(message));
 
     private void AddLog(string message)
     {
+        bool isAtBottom = false;
+        if (_logScrollViewer != null)
+        {
+            isAtBottom = _logScrollViewer.VerticalOffset >= _logScrollViewer.ScrollableHeight - 5;
+        }
+
         txtLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\n");
-        txtLog.ScrollToEnd();
+
+        if (isAtBottom && _logScrollViewer != null)
+        {
+            txtLog.ScrollToEnd();
+        }
+    }
+
+    private static ScrollViewer? GetScrollViewer(DependencyObject depObj)
+    {
+        if (depObj is ScrollViewer viewer) return viewer;
+
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+        {
+            var child = VisualTreeHelper.GetChild(depObj, i);
+            var result = GetScrollViewer(child);
+            if (result != null) return result;
+        }
+        return null;
     }
 
     private async Task<string> FetchUpdateInfoAsync(string releaseType)

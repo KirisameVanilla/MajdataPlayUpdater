@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Net.Http;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace MajdataPlayUpdater;
@@ -43,7 +41,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
         await Task.Run(() =>
         {
-            LogMessage?.Invoke(_assets.Any(CheckAsset)? "有更新": "无更新 (不检测文本文件, 如游戏运行有问题请当作有更新)");
+            LogMessage?.Invoke(_assets.Any(CheckAsset) ? "有更新" : "无更新 (不检测文本文件, 如游戏运行有问题请当作有更新)");
         });
     }
 
@@ -83,7 +81,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
         var localHash = CalculateFileHash(localFilePath);
 
-        return !(localFilePath.EndsWith(".json") || localFilePath.EndsWith(".meta") || localFilePath.EndsWith(".browser")) && !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase) ; 
+        return !(localFilePath.EndsWith(".json") || localFilePath.EndsWith(".meta") || localFilePath.EndsWith(".browser")) && !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase);
     }
 
     public static string CalculateFileHash(string filePath)
@@ -100,7 +98,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
         {
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
 
-            using (var response = await App.HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            using (var response = await MainWindow.MyHttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
 

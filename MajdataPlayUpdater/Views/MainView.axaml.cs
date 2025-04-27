@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using MajdataPlayUpdater.Models;
@@ -30,6 +31,7 @@ public partial class MainView : UserControl
     private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {
         _logScrollViewer = GetScrollViewer(TxtLog);
+        TxtMajdataPath.Text = AppDomain.CurrentDomain.BaseDirectory;
     }
 
     private void DisableUiEvents()
@@ -40,6 +42,7 @@ public partial class MainView : UserControl
         BtnEnsureProxy.IsEnabled = false;
         CmbReleaseType.IsEnabled = false;
         TxtProxy.IsEnabled = false;
+        TxtMajdataPath.IsEnabled = false;
 
         ProgressBar.IsIndeterminate = true;
     }
@@ -52,6 +55,7 @@ public partial class MainView : UserControl
         BtnEnsureProxy.IsEnabled = true;
         CmbReleaseType.IsEnabled = true;
         TxtProxy.IsEnabled = true;
+        TxtMajdataPath.IsEnabled = true;
 
         ProgressBar.IsIndeterminate = false;
     }
@@ -66,7 +70,7 @@ public partial class MainView : UserControl
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
+            var updater = new UpdateManager(apiResponse, TxtMajdataPath.Text ?? AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
             updater.LogMessage += OnLogMessageReceived;
             await Task.Run(updater.PerformUpdateAsync);
         }
@@ -90,7 +94,7 @@ public partial class MainView : UserControl
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
+            var updater = new UpdateManager(apiResponse, TxtMajdataPath.Text ?? AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
             updater.LogMessage += OnLogMessageReceived;
             await Task.Run(updater.CheckUpdateAsync);
         }
@@ -111,7 +115,7 @@ public partial class MainView : UserControl
             DisableUiEvents();
 
             var releaseType = (CmbReleaseType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Nightly";
-            var rootPath = AppDomain.CurrentDomain.BaseDirectory;
+            var rootPath = TxtMajdataPath.Text ?? AppDomain.CurrentDomain.BaseDirectory;
             var assets = new List<AssetInfo>();
 
             await Task.Run(() =>
@@ -213,4 +217,28 @@ public partial class MainView : UserControl
     private void TxtProxy_OnLostFocus(object? sender, RoutedEventArgs e) => SetProxyHint.IsVisible = (TxtProxy.Text?.Trim() ?? string.Empty) == string.Empty;
 
     private void TxtProxy_OnGotFocusGotFocus(object? sender, GotFocusEventArgs e) => SetProxyHint.IsVisible = false;
+
+    private async void BtnSelectMajdataPath_OnClickAsync(object? sender, RoutedEventArgs e)
+    {
+        var window = this.GetVisualRoot() as Window;
+        var storageProvider = window?.StorageProvider;
+
+        if (storageProvider?.CanPickFolder ?? false)
+        {
+            var folder = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "请选择MajdataPlay.exe根目录",
+                AllowMultiple = false
+            });
+
+            if (folder != null && folder.Count > 0)
+            {
+                TxtMajdataPath.Text = folder[0].Path.LocalPath;
+            }
+        }
+        else
+        {
+            AddLog("不允许选择文件夹");
+        }
+    }
 }

@@ -18,7 +18,7 @@ public partial class MainView : UserControl
 {
     private const string BaseApiUrl = "https://kirisamevanilla.github.io/dev/";
     private ScrollViewer? _logScrollViewer;
-    private MainViewModel? ViewModel => DataContext as MainViewModel;
+    private MainViewModel ViewModel => DataContext as MainViewModel ?? new MainViewModel();
     public MainView()
     {
         InitializeComponent();
@@ -61,11 +61,11 @@ public partial class MainView : UserControl
         {
             DisableUiEvents();
 
-            var releaseType = ((ComboBoxItem)CmbReleaseType.SelectedItem).Content.ToString() ?? "Nightly";
+            var releaseType = (CmbReleaseType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Nightly";
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, AppDomain.CurrentDomain.BaseDirectory, GetDownloadUrl(releaseType), ViewModel.HttpHelper);
+            var updater = new UpdateManager(apiResponse, AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
             updater.LogMessage += OnLogMessageReceived;
             await Task.Run(updater.PerformUpdateAsync);
         }
@@ -85,11 +85,11 @@ public partial class MainView : UserControl
         {
             DisableUiEvents();
 
-            var releaseType = ((ComboBoxItem)CmbReleaseType.SelectedItem).Content.ToString() ?? "Nightly";
+            var releaseType = (CmbReleaseType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Nightly";
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, AppDomain.CurrentDomain.BaseDirectory, GetDownloadUrl(releaseType), ViewModel.HttpHelper);
+            var updater = new UpdateManager(apiResponse, AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
             updater.LogMessage += OnLogMessageReceived;
             await Task.Run(updater.CheckUpdateAsync);
         }
@@ -109,7 +109,7 @@ public partial class MainView : UserControl
         {
             DisableUiEvents();
 
-            var releaseType = ((ComboBoxItem)CmbReleaseType.SelectedItem).Content.ToString() ?? "Nightly";
+            var releaseType = (CmbReleaseType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Nightly";
             var rootPath = AppDomain.CurrentDomain.BaseDirectory;
             var assets = new List<AssetInfo>();
 
@@ -118,7 +118,7 @@ public partial class MainView : UserControl
                 foreach (var file in Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories))
                 {
                     var relativePath = Path.GetRelativePath(rootPath, file).Replace("\\", "/");
-                    if (relativePath == "Nightly.json" || relativePath == "Stable.json" || relativePath.Contains("MajdataPlayUpdater")) continue; // 跳过
+                    if (relativePath is "Nightly.json" or "Stable.json" or "MajdataPlayUpdater.Desktop.exe" or "libSkiaSharp.dll" or "libHarfBuzzSharp.dll" or "av_libglesv2.dll") continue; // 跳过
 
                     var sha256 = UpdateManager.CalculateFileHash(file);
 
@@ -134,10 +134,7 @@ public partial class MainView : UserControl
                 }
             });
 
-            var json = JsonSerializer.Serialize(assets, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
+            var json = JsonSerializer.Serialize(assets, JsonContext.IndentedOptions);
 
             await Task.Run(() => File.WriteAllText(Path.Combine(rootPath, $"{releaseType}.json"), json));
 
@@ -180,7 +177,7 @@ public partial class MainView : UserControl
 
         if (isAtBottom && _logScrollViewer != null)
         {
-            _logScrollViewer.Offset = new Avalonia.Vector(0, _logScrollViewer.Extent.Height);
+            _logScrollViewer.Offset = new Vector(0, _logScrollViewer.Extent.Height);
         }
     }
 
@@ -213,15 +210,5 @@ public partial class MainView : UserControl
             AddLog($"API请求失败: {ex.StatusCode} - {ex.Message}");
             throw;
         }
-    }
-
-    private string GetDownloadUrl(string releaseType)
-    {
-        return releaseType.ToLower() switch
-        {
-            "nightly" => "https://kirisamevanilla.github.io/dev/publish",
-            "stable" => "https://your-cdn.com/stable",
-            _ => throw new ArgumentException("无效的版本类型")
-        };
     }
 }

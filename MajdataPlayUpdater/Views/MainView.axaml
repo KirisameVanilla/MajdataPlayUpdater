@@ -1,0 +1,116 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:MajdataPlayUpdater.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MajdataPlayUpdater.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+	<Grid Margin="10">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+
+		<!-- 发布类型选择 -->
+		<ComboBox x:Name="CmbReleaseType"
+				  Grid.Row="0"
+				  Grid.Column="0"
+				  Grid.ColumnSpan="4"
+				  Margin="0,0,0,5"
+				  SelectedIndex="0">
+			<ComboBoxItem Content="Nightly"/>
+			<ComboBoxItem Content="Stable"/>
+		</ComboBox>
+
+		<!-- 按钮喵 -->
+		<Button x:Name="BtnCheckUpdate"
+				Click="BtnCheckUpdate_Click"
+				Grid.Row="1"
+				Grid.Column="0"
+				Grid.ColumnSpan="2"
+				Content="检查更新"
+				Margin="0,5,5,5"
+				Padding="10,5"/>
+
+		<Button x:Name="BtnGenerateJson"
+				Click="BtnGenerateJson_Click"
+				Grid.Row="1"
+				Grid.Column="2"
+				Grid.ColumnSpan="2"
+				Content="生成Json"
+				Margin="5,5,0,5"
+				Padding="10,5"/>
+
+		<Button x:Name="BtnPerformUpdate"
+				Click="BtnPerformUpdate_Click"
+				Grid.Row="2"
+				Grid.Column="0"
+				Grid.ColumnSpan="4"
+				Content="开始更新"
+				Margin="0,5,0,5"
+				Padding="10,5"/>
+
+		<TextBox x:Name="TxtProxy"
+				 Grid.Row="3"
+				 Grid.Column="0"
+				 Grid.ColumnSpan="3"
+				 Margin="0,5,5,5"
+				 Height="25"
+				 TextChanged="TxtProxy_TextChanged"
+				 VerticalContentAlignment="Center"/>
+
+		<TextBlock Text="请输入代理地址，例如 http://127.0.0.1:8888"
+				   x:Name="SetProxyHint"
+				   Grid.Row="3"
+				   Grid.Column="0"
+				   Grid.ColumnSpan="3"
+				   VerticalAlignment="Center"
+				   Foreground="Gray"
+				   IsHitTestVisible="False"
+				   Margin="5,0,0,0"/>
+
+		<Button x:Name="BtnEnsureProxy"
+				Click="BtnEnsureProxy_Click"
+				Grid.Row="3"
+				Grid.Column="3"
+				Content="确认"
+				Margin="5,5,0,5"
+				Padding="10,5"/>
+
+		<!-- 日志 -->
+		<TextBox x:Name="TxtLog"
+				 Grid.Row="4"
+				 Grid.Column="0"
+				 Grid.ColumnSpan="4"
+				 Margin="0,10"
+				 IsReadOnly="True"
+				 TextWrapping="Wrap"
+				 FontFamily="Consolas"
+				 AcceptsReturn="True"/>
+
+		<!-- 进度 -->
+		<ProgressBar x:Name="ProgressBar"
+					 Grid.Row="5"
+                     Grid.Column="0"
+					 Grid.ColumnSpan="4"
+					 Height="20"
+					 IsIndeterminate="False"/>
+	</Grid>
+</UserControl>

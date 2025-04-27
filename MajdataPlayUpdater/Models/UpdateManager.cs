@@ -12,10 +12,7 @@ namespace MajdataPlayUpdater.Models;
 public class UpdateManager(string apiResponse, string baseLocalPath, string baseDownloadUrl, HttpHelper httpHelper)
 {
     public event Action<string>? LogMessage;
-    private readonly List<AssetInfo>? _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, new JsonSerializerOptions
-    {
-        PropertyNameCaseInsensitive = true
-    });
+    private readonly List<AssetInfo>? _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, JsonContext.IndentedOptions);
 
     public async Task PerformUpdateAsync()
     {
@@ -102,7 +99,13 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
+            var directoryName = Path.GetDirectoryName(destinationPath);
+            if (directoryName == null)
+            {
+                LogMessage?.Invoke($"从{destinationPath}获取目录名失败");
+                return;
+            }
+            Directory.CreateDirectory(directoryName);
 
             using (var response = await httpHelper.Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {

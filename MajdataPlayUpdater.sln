@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35806.99 d17.13
+VisualStudioVersion = 17.13.35806.99
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MajdataPlayUpdater", "MajdataPlayUpdater\MajdataPlayUpdater.csproj", "{98B49969-0B8D-4BF1-BFCF-D1B6375FCCB5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MajdataPlayUpdater", "MajdataPlayUpdater\MajdataPlayUpdater.csproj", "{46D2335E-AC16-40E5-AF40-BD53A2DFF202}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{98B49969-0B8D-4BF1-BFCF-D1B6375FCCB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{98B49969-0B8D-4BF1-BFCF-D1B6375FCCB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{98B49969-0B8D-4BF1-BFCF-D1B6375FCCB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{98B49969-0B8D-4BF1-BFCF-D1B6375FCCB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46D2335E-AC16-40E5-AF40-BD53A2DFF202}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46D2335E-AC16-40E5-AF40-BD53A2DFF202}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46D2335E-AC16-40E5-AF40-BD53A2DFF202}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46D2335E-AC16-40E5-AF40-BD53A2DFF202}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {C6B9962F-2A20-417F-A615-B6A575C7EA07}
+		SolutionGuid = {09E2B5AE-209E-4710-8082-A72C29002F4E}
 	EndGlobalSection
 EndGlobal

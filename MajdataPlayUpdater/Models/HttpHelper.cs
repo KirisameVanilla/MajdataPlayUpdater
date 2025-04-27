@@ -12,11 +12,11 @@ public class HttpHelper
         Client = new HttpClient();
     }
 
-    public void RecreateHttpClientWithProxy(string? proxyUrl)
+    public void RecreateHttpClientWithProxy(string proxyUrl)
     {
-        Client?.Dispose();
+        Client.Dispose();
 
-        if ((proxyUrl?.Trim() ?? string.Empty) == string.Empty)
+        if (proxyUrl.Trim() == string.Empty)
         {
             Client = new HttpClient();
         }

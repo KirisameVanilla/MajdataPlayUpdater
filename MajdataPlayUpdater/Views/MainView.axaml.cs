@@ -26,12 +26,16 @@ public partial class MainView : UserControl
         InitializeComponent();
         Loaded += MainWindow_Loaded;
         DataContext = new MainViewModel();
+        SettingsManager.Load();
+        TxtProxy.Text = SettingsManager.Settings.ProxyUrl;
+        TxtMajdataPath.Text = SettingsManager.Settings.LastOpenedFolder;
+        ViewModel.HttpHelper.RecreateHttpClientWithProxy(SettingsManager.Settings.ProxyUrl);
+        SetProxyHint.IsVisible = SettingsManager.Settings.ProxyUrl == string.Empty;
     }
 
     private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {
         _logScrollViewer = GetScrollViewer(TxtLog);
-        TxtMajdataPath.Text = AppDomain.CurrentDomain.BaseDirectory;
     }
 
     private void DisableUiEvents()
@@ -70,7 +74,7 @@ public partial class MainView : UserControl
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, TxtMajdataPath.Text ?? AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
+            var updater = new UpdateManager(apiResponse, SettingsManager.Settings.LastOpenedFolder, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
             updater.LogMessage += OnLogMessageReceived;
             await Task.Run(updater.PerformUpdateAsync);
         }
@@ -94,7 +98,7 @@ public partial class MainView : UserControl
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, TxtMajdataPath.Text ?? AppDomain.CurrentDomain.BaseDirectory, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
+            var updater = new UpdateManager(apiResponse, SettingsManager.Settings.LastOpenedFolder, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
             updater.LogMessage += OnLogMessageReceived;
             await Task.Run(updater.CheckUpdateAsync);
         }
@@ -115,7 +119,7 @@ public partial class MainView : UserControl
             DisableUiEvents();
 
             var releaseType = (CmbReleaseType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Nightly";
-            var rootPath = TxtMajdataPath.Text ?? AppDomain.CurrentDomain.BaseDirectory;
+            var rootPath = SettingsManager.Settings.LastOpenedFolder;
             var assets = new List<AssetInfo>();
 
             await Task.Run(() =>
@@ -157,8 +161,11 @@ public partial class MainView : UserControl
 
     private void BtnEnsureProxy_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.HttpHelper.RecreateHttpClientWithProxy(TxtProxy.Text);
-        AddLog("代理设置切换为: " + ((TxtProxy.Text?.Trim() ?? string.Empty) == string.Empty ? "无代理" : TxtProxy.Text));
+        var proxyUrl = TxtProxy.Text?.Trim() ?? string.Empty;
+        SettingsManager.Settings.ProxyUrl = proxyUrl;
+        SettingsManager.Save();
+        ViewModel.HttpHelper.RecreateHttpClientWithProxy(proxyUrl);
+        AddLog("代理设置切换为: " + (proxyUrl == string.Empty ? "无代理" : proxyUrl));
     }
 
     private void OnLogMessageReceived(string message) => Dispatcher.UIThread.Post(() => AddLog(message));
@@ -199,7 +206,6 @@ public partial class MainView : UserControl
         return null;
     }
 
-
     private async Task<string> FetchUpdateInfoAsync(string releaseType)
     {
         AddLog($"正在获取 {releaseType} 版本信息...");
@@ -234,6 +240,8 @@ public partial class MainView : UserControl
             if (folder != null && folder.Count > 0)
             {
                 TxtMajdataPath.Text = folder[0].Path.LocalPath;
+                SettingsManager.Settings.LastOpenedFolder = folder[0].Path.LocalPath;
+                SettingsManager.Save();
             }
         }
         else

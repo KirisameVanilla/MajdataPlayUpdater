@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -150,9 +151,6 @@ public partial class MainView : UserControl
         }
     }
 
-    private void TxtProxy_TextChanged(object sender, TextChangedEventArgs e) => SetProxyHint.IsVisible =
-        (TxtProxy.Text?.Trim() ?? string.Empty) == string.Empty;
-
     private void BtnEnsureProxy_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.HttpHelper.RecreateHttpClientWithProxy(TxtProxy.Text);
@@ -211,4 +209,8 @@ public partial class MainView : UserControl
             throw;
         }
     }
+
+    private void TxtProxy_OnLostFocus(object? sender, RoutedEventArgs e) => SetProxyHint.IsVisible = (TxtProxy.Text?.Trim() ?? string.Empty) == string.Empty;
+
+    private void TxtProxy_OnGotFocusGotFocus(object? sender, GotFocusEventArgs e) => SetProxyHint.IsVisible = false;
 }

@@ -18,7 +18,7 @@ namespace MajdataPlayUpdater.Views;
 
 public partial class MainView : UserControl
 {
-    private const string BaseApiUrl = "https://kirisamevanilla.github.io/dev/";
+    private const string BaseApiUrl = "https://majdataplay-distrib.work/";
     private ScrollViewer? _logScrollViewer;
     private MainViewModel ViewModel => DataContext as MainViewModel ?? new MainViewModel();
     public MainView()

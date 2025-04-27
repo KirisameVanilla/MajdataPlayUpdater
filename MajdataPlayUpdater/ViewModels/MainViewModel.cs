@@ -11,8 +11,8 @@ public class MainViewModel : ViewModelBase
     {
         return releaseType.ToLower() switch
         {
-            "nightly" => "https://kirisamevanilla.github.io/dev/publish",
-            "stable" => "https://your-cdn.com/stable",
+            "nightly" => "https://majdataplay-distrib.work/Nightly",
+            "stable" => "https://majdataplay-distrib.work/Stable",
             _ => throw new ArgumentException("无效的版本类型")
         };
     }

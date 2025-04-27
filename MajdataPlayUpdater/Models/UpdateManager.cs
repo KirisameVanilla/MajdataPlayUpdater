@@ -1,9 +1,15 @@
-﻿using System.Security.Cryptography;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text.Json;
+using System.Threading.Tasks;
 
-namespace MajdataPlayUpdater;
+namespace MajdataPlayUpdater.Models;
 
-public class UpdateManager(string apiResponse, string baseLocalPath, string baseDownloadUrl)
+public class UpdateManager(string apiResponse, string baseLocalPath, string baseDownloadUrl, HttpHelper httpHelper)
 {
     public event Action<string>? LogMessage;
     private readonly List<AssetInfo>? _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, new JsonSerializerOptions
@@ -98,7 +104,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
         {
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
 
-            using (var response = await MainWindow.MyHttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            using (var response = await httpHelper.Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
 

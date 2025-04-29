@@ -13,6 +13,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 {
     public event Action<string>? LogMessage;
     private readonly List<AssetInfo>? _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, JsonContext.IndentedOptions);
+    private List<AssetInfo>? _assetsOutdated = null;
 
     public async Task PerformUpdateAsync()
     {
@@ -23,8 +24,9 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
         }
 
         LogMessage?.Invoke("开始处理版本更新");
-
-        foreach (var asset in _assets)
+        List<AssetInfo> assetsNeedUpdate = _assetsOutdated ?? _assets;
+        _assetsOutdated = null;
+        foreach (var asset in assetsNeedUpdate)
         {
             await ProcessAssetAsync(asset);
         }
@@ -44,7 +46,8 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
         await Task.Run(() =>
         {
-            LogMessage?.Invoke(_assets.Any(CheckAsset) ? "有更新" : "无更新 (不检测文本文件, 如游戏运行有问题请当作有更新)");
+            _assetsOutdated = _assets.Where(CheckAsset).ToList();
+            LogMessage?.Invoke(_assetsOutdated.Count != 0 ? $"有更新, 预计需要更新 {_assetsOutdated.Count} 个文件" : "无更新 (不检测文本文件, 如游戏运行有问题请当作有更新)");
         });
     }
 

@@ -5,12 +5,7 @@ namespace MajdataPlayUpdater.Models;
 
 public class HttpHelper
 {
-    public HttpClient Client { get; set; }
-
-    public HttpHelper()
-    {
-        Client = new HttpClient();
-    }
+    public HttpClient Client { get; set; } = new ();
 
     public void RecreateHttpClientWithProxy(string proxyUrl)
     {

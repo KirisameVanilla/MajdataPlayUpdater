@@ -21,6 +21,7 @@ public partial class MainView : UserControl
     private const string BaseApiUrl = "https://majdataplay-distrib.work/";
     private ScrollViewer? _logScrollViewer;
     private MainViewModel ViewModel => DataContext as MainViewModel ?? new MainViewModel();
+    private readonly UpdateManager updater = new();
     public MainView()
     {
         InitializeComponent();
@@ -31,6 +32,10 @@ public partial class MainView : UserControl
         TxtMajdataPath.Text = SettingsManager.Settings.LastOpenedFolder;
         ViewModel.HttpHelper.RecreateHttpClientWithProxy(SettingsManager.Settings.ProxyUrl);
         SetProxyHint.IsVisible = SettingsManager.Settings.ProxyUrl == string.Empty;
+
+        updater.SetBaseLocalPath(SettingsManager.Settings.LastOpenedFolder);
+        updater.SetHttpHelper(ViewModel.HttpHelper);
+        updater.LogMessage += OnLogMessageReceived;
     }
 
     private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
@@ -74,8 +79,9 @@ public partial class MainView : UserControl
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, SettingsManager.Settings.LastOpenedFolder, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
-            updater.LogMessage += OnLogMessageReceived;
+            updater.SetAssets(apiResponse);
+            updater.SetBaseDownloadUrl(ViewModel.GetDownloadUrl(releaseType));
+
             await Task.Run(updater.PerformUpdateAsync);
         }
         catch (Exception ex)
@@ -98,8 +104,9 @@ public partial class MainView : UserControl
 
             var apiResponse = await FetchUpdateInfoAsync(releaseType);
 
-            var updater = new UpdateManager(apiResponse, SettingsManager.Settings.LastOpenedFolder, ViewModel.GetDownloadUrl(releaseType), ViewModel.HttpHelper);
-            updater.LogMessage += OnLogMessageReceived;
+            updater.SetAssets(apiResponse);
+            updater.SetBaseDownloadUrl(ViewModel.GetDownloadUrl(releaseType));
+            
             await Task.Run(updater.CheckUpdateAsync);
         }
         catch (Exception ex)
@@ -165,6 +172,7 @@ public partial class MainView : UserControl
         SettingsManager.Settings.ProxyUrl = proxyUrl;
         SettingsManager.Save();
         ViewModel.HttpHelper.RecreateHttpClientWithProxy(proxyUrl);
+        updater.SetHttpHelper(ViewModel.HttpHelper);
         AddLog("代理设置切换为: " + (proxyUrl == string.Empty ? "无代理" : proxyUrl));
     }
 
@@ -242,6 +250,7 @@ public partial class MainView : UserControl
                 TxtMajdataPath.Text = folder[0].Path.LocalPath;
                 SettingsManager.Settings.LastOpenedFolder = folder[0].Path.LocalPath;
                 SettingsManager.Save();
+                updater.SetBaseLocalPath(SettingsManager.Settings.LastOpenedFolder);
             }
         }
         else

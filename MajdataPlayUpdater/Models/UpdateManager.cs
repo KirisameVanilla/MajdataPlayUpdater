@@ -5,15 +5,26 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MajdataPlayUpdater.Models;
 
-public class UpdateManager(string apiResponse, string baseLocalPath, string baseDownloadUrl, HttpHelper httpHelper)
+public class UpdateManager()
 {
     public event Action<string>? LogMessage;
-    private readonly List<AssetInfo>? _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, JsonContext.IndentedOptions);
-    private List<AssetInfo>? _assetsOutdated = null;
+    private List<AssetInfo>? _assets;
+    private HashSet<AssetInfo> _assetsOutdated = [];
+    private HttpHelper? _httpHelper;
+    private string? _baseLocalPath;
+    private string? _baseDownloadUrl;
+    private HashSet<AssetInfo> _textFiles = [];
+    private bool check = false;
+
+    public void SetAssets(string apiResponse) => _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, JsonContext.IndentedOptions);
+    public void SetHttpHelper(HttpHelper httpHelper) => _httpHelper = httpHelper;
+    public void SetBaseLocalPath(string baseLocalPath) => _baseLocalPath = baseLocalPath;
+    public void SetBaseDownloadUrl(string baseDownloadUrl) => _baseDownloadUrl = baseDownloadUrl;
 
     public async Task PerformUpdateAsync()
     {
@@ -24,12 +35,45 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
         }
 
         LogMessage?.Invoke("开始处理版本更新");
-        List<AssetInfo> assetsNeedUpdate = _assetsOutdated ?? _assets;
-        _assetsOutdated = null;
-        foreach (var asset in assetsNeedUpdate)
+
+        if (!check)
+            _assetsOutdated = _assets.Where(CheckAsset).ToHashSet();
+        
+        var assetsNeedUpdate = new HashSet<AssetInfo>(_assetsOutdated);
+        assetsNeedUpdate.UnionWith(_textFiles);
+        if (assetsNeedUpdate.Count <= 10)
         {
-            await ProcessAssetAsync(asset);
+            foreach (var a in assetsNeedUpdate)
+            {
+                LogMessage?.Invoke(a.Name);
+            }
         }
+
+        _assetsOutdated.Clear();
+        _textFiles.Clear();
+        check = false;
+
+        // 控制最大并发数
+        using var semaphore = new SemaphoreSlim(5);
+
+        var tasks = assetsNeedUpdate.Select(async asset =>
+        {
+            await semaphore.WaitAsync();
+            try
+            {
+                await ProcessAssetAsync(asset);
+            }
+            catch (Exception ex)
+            {
+                LogMessage?.Invoke($"处理文件时出错: {asset.RelativePath} - {ex.Message}");
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
 
         LogMessage?.Invoke("更新处理完成");
     }
@@ -46,15 +90,16 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
 
         await Task.Run(() =>
         {
-            _assetsOutdated = _assets.Where(CheckAsset).ToList();
+            _assetsOutdated = _assets.Where(CheckAsset).ToHashSet();
             LogMessage?.Invoke(_assetsOutdated.Count != 0 ? $"有更新, 预计需要更新 {_assetsOutdated.Count} 个文件" : "无更新 (不检测文本文件, 如游戏运行有问题请当作有更新)");
+            check = true;
         });
     }
 
     private async Task ProcessAssetAsync(AssetInfo asset)
     {
-        var localFilePath = Path.Combine(baseLocalPath, asset.RelativePath.TrimStart('/'));
-        var downloadUrl = baseDownloadUrl + asset.RelativePath;
+        var localFilePath = Path.Combine(_baseLocalPath, asset.RelativePath.TrimStart('/'));
+        var downloadUrl = _baseDownloadUrl + asset.RelativePath;
 
         if (!File.Exists(localFilePath))
         {
@@ -70,15 +115,13 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
             LogMessage?.Invoke($"文件并非最新: {localFilePath} - 将更新");
             await DownloadFileAsync(downloadUrl, localFilePath, asset.SHA256);
         }
-        else
-        {
-            LogMessage?.Invoke($"文件已验证: {localFilePath} - 无需更新");
-        }
     }
 
+    // 返回值: 是否需要更新
+    // 如果不是文本文件 并且哈希不同那么需要更新
     private bool CheckAsset(AssetInfo asset)
     {
-        var localFilePath = Path.Combine(baseLocalPath, asset.RelativePath.TrimStart('/'));
+        var localFilePath = Path.Combine(_baseLocalPath, asset.RelativePath.TrimStart('/'));
 
         if (!File.Exists(localFilePath))
         {
@@ -86,8 +129,13 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
         }
 
         var localHash = CalculateFileHash(localFilePath);
+        var isTextFile = localFilePath.EndsWith(".json") || localFilePath.EndsWith(".meta") ||
+                         localFilePath.EndsWith(".browser");
 
-        return !(localFilePath.EndsWith(".json") || localFilePath.EndsWith(".meta") || localFilePath.EndsWith(".browser")) && !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase);
+        // 如果是文本文件，且哈希不同。用于强制更新文本文件；如果哈希相同就不管了^ ^
+        if (isTextFile && !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase)) _textFiles.Add(asset);
+
+        return !isTextFile && !string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase);
     }
 
     public static string CalculateFileHash(string filePath)
@@ -110,7 +158,7 @@ public class UpdateManager(string apiResponse, string baseLocalPath, string base
             }
             Directory.CreateDirectory(directoryName);
 
-            using (var response = await httpHelper.Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            using (var response = await _httpHelper.Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
 

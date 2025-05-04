@@ -12,7 +12,7 @@ public static class SettingsManager
         "MajdataPlayUpdater",
         "settings.json");
 
-    public static Settings Settings { get; private set; } = new Settings();
+    public static Settings Settings { get; private set; } = new();
 
     public static void Load()
     {
@@ -35,17 +35,13 @@ public static class SettingsManager
         try
         {
             var directory = Path.GetDirectoryName(SettingsFilePath);
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory!);
-            }
+            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory!);
 
             var json = JsonSerializer.Serialize(Settings, JsonContext.IndentedOptions);
             File.WriteAllText(SettingsFilePath, json);
         }
         catch
         {
-            
         }
     }
 }

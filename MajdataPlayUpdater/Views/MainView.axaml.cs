@@ -18,6 +18,7 @@ namespace MajdataPlayUpdater.Views;
 
 public partial class MainView : UserControl
 {
+    private const int VersionCode = 1;
     private const string BaseApiUrl = "https://majdataplay-distrib.work/";
     private ScrollViewer? _logScrollViewer;
     private MainViewModel ViewModel => DataContext as MainViewModel ?? new MainViewModel();
@@ -36,11 +37,26 @@ public partial class MainView : UserControl
         updater.SetBaseLocalPath(SettingsManager.Settings.LastOpenedFolder);
         updater.SetHttpHelper(ViewModel.HttpHelper);
         updater.LogMessage += OnLogMessageReceived;
+        CheckVersion();
     }
 
     private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {
         _logScrollViewer = GetScrollViewer(TxtLog);
+    }
+
+    private async Task CheckVersion()
+    {
+        var versionJson = await ViewModel.HttpHelper.Client.GetStringAsync($"https://majdataplay-distrib.work/MajdataPlayUpdaterVersion.json");
+        using JsonDocument doc = JsonDocument.Parse(versionJson);
+
+        var versionCode = doc.RootElement.GetProperty("VersionCode").GetInt32();
+        var changelog = doc.RootElement.GetProperty("Changelog").GetString() ?? string.Empty;
+        if (versionCode != VersionCode)
+        {
+            var dialog = new Dialog("本体有更新！！", changelog);
+            await dialog.ShowDialog(VisualRoot as Window);
+        }
     }
 
     private void DisableUiEvents()
@@ -134,7 +150,7 @@ public partial class MainView : UserControl
                 foreach (var file in Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories))
                 {
                     var relativePath = Path.GetRelativePath(rootPath, file).Replace("\\", "/");
-                    if (relativePath is "Nightly.json" or "Stable.json" or "MajdataPlayUpdater.Desktop.exe" or "libSkiaSharp.dll" or "libHarfBuzzSharp.dll" or "av_libglesv2.dll") continue; // 跳过
+                    if (relativePath is "Nightly.json" or "Stable.json" or "MajdataPlayUpdater.Desktop.exe") continue; // 跳过
 
                     var sha256 = UpdateManager.CalculateFileHash(file);
 

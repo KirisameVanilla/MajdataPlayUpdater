@@ -3,7 +3,7 @@ using MajdataPlayUpdater.Models;
 
 namespace MajdataPlayUpdater.ViewModels;
 
-public class MainViewModel : ViewModelBase
+public class UpdaterViewModel : ViewModelBase
 {
     public HttpHelper HttpHelper = new();
 

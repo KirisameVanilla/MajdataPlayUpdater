@@ -16,18 +16,18 @@ using MajdataPlayUpdater.ViewModels;
 
 namespace MajdataPlayUpdater.Views;
 
-public partial class MainView : UserControl
+public partial class UpdaterView : UserControl
 {
     private const int VersionCode = 1;
     private const string BaseApiUrl = "https://majdataplay-distrib.work/";
     private readonly UpdateManager updater = new();
     private ScrollViewer? _logScrollViewer;
 
-    public MainView()
+    public UpdaterView()
     {
         InitializeComponent();
         Loaded += MainWindow_Loaded;
-        DataContext = new MainViewModel();
+        DataContext = new UpdaterViewModel();
         SettingsManager.Load();
         TxtProxy.Text = SettingsManager.Settings.ProxyUrl;
         TxtMajdataPath.Text = SettingsManager.Settings.LastOpenedFolder;
@@ -40,7 +40,7 @@ public partial class MainView : UserControl
         CheckVersion();
     }
 
-    private MainViewModel ViewModel => DataContext as MainViewModel ?? new MainViewModel();
+    private UpdaterViewModel ViewModel => DataContext as UpdaterViewModel ?? new UpdaterViewModel();
 
     private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {

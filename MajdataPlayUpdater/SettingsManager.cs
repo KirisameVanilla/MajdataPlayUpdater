@@ -3,7 +3,7 @@ using System.IO;
 using System.Text.Json;
 using MajdataPlayUpdater.Models;
 
-namespace MajdataPlayUpdater.ViewModels;
+namespace MajdataPlayUpdater;
 
 public static class SettingsManager
 {

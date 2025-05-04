@@ -18,12 +18,12 @@ public class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainViewModel()
+                DataContext = new UpdaterViewModel()
             };
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
-            singleViewPlatform.MainView = new MainView
+            singleViewPlatform.MainView = new UpdaterView
             {
-                DataContext = new MainViewModel()
+                DataContext = new UpdaterViewModel()
             };
 
         base.OnFrameworkInitializationCompleted();

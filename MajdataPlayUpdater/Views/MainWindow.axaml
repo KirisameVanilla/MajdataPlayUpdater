@@ -15,7 +15,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal">
-            <Button Content="Main" Click="OnGoMain" FontFamily="Microsoft YaHei" />
+            <Button Content="Updater" Click="OnGoMain" FontFamily="Microsoft YaHei" />
             <Button Content="Settings" Click="OnGoSettings" FontFamily="Microsoft YaHei" />
         </StackPanel>
 

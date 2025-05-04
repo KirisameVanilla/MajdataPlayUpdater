@@ -1,4 +1,10 @@
-﻿using Avalonia;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -7,12 +13,6 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using MajdataPlayUpdater.Models;
 using MajdataPlayUpdater.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace MajdataPlayUpdater.Views;
 
@@ -20,9 +20,9 @@ public partial class MainView : UserControl
 {
     private const int VersionCode = 1;
     private const string BaseApiUrl = "https://majdataplay-distrib.work/";
-    private ScrollViewer? _logScrollViewer;
-    private MainViewModel ViewModel => DataContext as MainViewModel ?? new MainViewModel();
     private readonly UpdateManager updater = new();
+    private ScrollViewer? _logScrollViewer;
+
     public MainView()
     {
         InitializeComponent();
@@ -40,6 +40,8 @@ public partial class MainView : UserControl
         CheckVersion();
     }
 
+    private MainViewModel ViewModel => DataContext as MainViewModel ?? new MainViewModel();
+
     private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
     {
         _logScrollViewer = GetScrollViewer(TxtLog);
@@ -47,8 +49,10 @@ public partial class MainView : UserControl
 
     private async Task CheckVersion()
     {
-        var versionJson = await ViewModel.HttpHelper.Client.GetStringAsync($"https://majdataplay-distrib.work/MajdataPlayUpdaterVersion.json");
-        using JsonDocument doc = JsonDocument.Parse(versionJson);
+        var versionJson =
+            await ViewModel.HttpHelper.Client.GetStringAsync(
+                "https://majdataplay-distrib.work/MajdataPlayUpdaterVersion.json");
+        using var doc = JsonDocument.Parse(versionJson);
 
         var versionCode = doc.RootElement.GetProperty("VersionCode").GetInt32();
         var changelog = doc.RootElement.GetProperty("Changelog").GetString() ?? string.Empty;
@@ -122,7 +126,7 @@ public partial class MainView : UserControl
 
             updater.SetAssets(apiResponse);
             updater.SetBaseDownloadUrl(ViewModel.GetDownloadUrl(releaseType));
-            
+
             await Task.Run(updater.CheckUpdateAsync);
         }
         catch (Exception ex)
@@ -150,7 +154,8 @@ public partial class MainView : UserControl
                 foreach (var file in Directory.GetFiles(rootPath, "*", SearchOption.AllDirectories))
                 {
                     var relativePath = Path.GetRelativePath(rootPath, file).Replace("\\", "/");
-                    if (relativePath is "Nightly.json" or "Stable.json" or "MajdataPlayUpdater.Desktop.exe") continue; // 跳过
+                    if (relativePath is "Nightly.json" or "Stable.json" or "MajdataPlayUpdater.Desktop.exe")
+                        continue; // 跳过
 
                     var sha256 = UpdateManager.CalculateFileHash(file);
 
@@ -192,26 +197,26 @@ public partial class MainView : UserControl
         AddLog("代理设置切换为: " + (proxyUrl == string.Empty ? "无代理" : proxyUrl));
     }
 
-    private void OnLogMessageReceived(string message) => Dispatcher.UIThread.Post(() => AddLog(message));
+    private void OnLogMessageReceived(string message)
+    {
+        Dispatcher.UIThread.Post(() => AddLog(message));
+    }
 
     private void AddLog(string message)
     {
         if (TxtLog == null)
             return;
 
-        bool isAtBottom = false;
+        var isAtBottom = false;
 
         if (_logScrollViewer != null)
-        {
-            isAtBottom = _logScrollViewer.Offset.Y >= _logScrollViewer.Extent.Height - _logScrollViewer.Viewport.Height - 5;
-        }
+            isAtBottom = _logScrollViewer.Offset.Y >=
+                         _logScrollViewer.Extent.Height - _logScrollViewer.Viewport.Height - 5;
 
         TxtLog.Text += $"[{DateTime.Now:HH:mm:ss}] {message}\n";
 
         if (isAtBottom && _logScrollViewer != null)
-        {
             _logScrollViewer.Offset = new Vector(0, _logScrollViewer.Extent.Height);
-        }
     }
 
 
@@ -244,9 +249,15 @@ public partial class MainView : UserControl
         }
     }
 
-    private void TxtProxy_OnLostFocus(object? sender, RoutedEventArgs e) => SetProxyHint.IsVisible = (TxtProxy.Text?.Trim() ?? string.Empty) == string.Empty;
+    private void TxtProxy_OnLostFocus(object? sender, RoutedEventArgs e)
+    {
+        SetProxyHint.IsVisible = (TxtProxy.Text?.Trim() ?? string.Empty) == string.Empty;
+    }
 
-    private void TxtProxy_OnGotFocusGotFocus(object? sender, GotFocusEventArgs e) => SetProxyHint.IsVisible = false;
+    private void TxtProxy_OnGotFocusGotFocus(object? sender, GotFocusEventArgs e)
+    {
+        SetProxyHint.IsVisible = false;
+    }
 
     private async void BtnSelectMajdataPath_OnClickAsync(object? sender, RoutedEventArgs e)
     {

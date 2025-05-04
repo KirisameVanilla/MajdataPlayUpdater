@@ -1,5 +1,5 @@
-﻿using MajdataPlayUpdater.Models;
-using System;
+﻿using System;
+using MajdataPlayUpdater.Models;
 
 namespace MajdataPlayUpdater.ViewModels;
 

@@ -14,8 +14,15 @@ public partial class MainWindow : Window
         MainContent.Content = UpdaterView;
     }
 
-    public void NavigateToSettings() => MainContent.Content = SettingsView;
-    public void NavigateToMain() => MainContent.Content = UpdaterView;
+    public void NavigateToSettings() {
+        MainContent.Content = SettingsView;
+        SettingsView.OnSwitchBack();
+    }
+    public void NavigateToMain()
+    {
+        MainContent.Content = UpdaterView;
+        UpdaterView.OnSwitchBack();
+    }
 
     private void OnGoMain(object? sender, RoutedEventArgs e) => NavigateToMain();
     private void OnGoSettings(object? sender, RoutedEventArgs e) => NavigateToSettings();

@@ -97,38 +97,6 @@
                 Margin="0,5,0,5"
                 Padding="10,5" />
 
-        <TextBox x:Name="TxtProxy"
-                 Grid.Row="4"
-                 Grid.Column="0"
-                 Grid.ColumnSpan="3"
-                 Margin="0,5,5,5"
-                 Height="25"
-                 HorizontalAlignment="Stretch"
-                 GotFocus="TxtProxy_OnGotFocusGotFocus"
-                 LostFocus="TxtProxy_OnLostFocus"
-                 VerticalContentAlignment="Center" />
-
-        <TextBlock Text="请输入代理地址，例如 http://127.0.0.1:8888"
-                   x:Name="SetProxyHint"
-                   Grid.Row="4"
-                   Grid.Column="0"
-                   Grid.ColumnSpan="3"
-                   VerticalAlignment="Center"
-                   Foreground="Gray"
-                   HorizontalAlignment="Stretch"
-                   IsHitTestVisible="False"
-                   Margin="5,0,0,0" />
-
-        <Button x:Name="BtnEnsureProxy"
-                Click="BtnEnsureProxy_Click"
-                Grid.Row="4"
-                Grid.Column="3"
-                Content="确认"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Margin="5,5,0,5"
-                Padding="10,5" />
-
         <!-- 日志 -->
         <TextBox x:Name="TxtLog"
                  Grid.Row="5"

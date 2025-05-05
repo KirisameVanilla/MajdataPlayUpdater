@@ -2,7 +2,135 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:MajdataPlayUpdater.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MajdataPlayUpdater.SettingsView">
-  Welcome to Avalonia!
+
+
+	<Grid Margin="10">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+			<RowDefinition Height="Auto" />
+		</Grid.RowDefinitions>
+
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*" />
+			<ColumnDefinition Width="*" />
+			<ColumnDefinition Width="*" />
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
+
+        <TextBlock Text="代理设置"
+                   Grid.Row="0"
+                   Grid.Column="0" />
+
+		<TextBox x:Name="TxtProxy"
+                 Grid.Row="1"
+                 Grid.Column="0"
+                 Grid.ColumnSpan="3"
+                 Margin="0,5,5,5"
+                 Height="25"
+                 HorizontalAlignment="Stretch"
+                 GotFocus="TxtProxy_OnGotFocusGotFocus"
+                 LostFocus="TxtProxy_OnLostFocus"
+                 VerticalContentAlignment="Center" />
+
+		<TextBlock Text="请输入代理地址，例如 http://127.0.0.1:8888"
+                   x:Name="SetProxyHint"
+                   Grid.Row="1"
+                   Grid.Column="0"
+                   Grid.ColumnSpan="3"
+                   VerticalAlignment="Center"
+                   Foreground="Gray"
+                   HorizontalAlignment="Stretch"
+                   IsHitTestVisible="False"
+                   Margin="5,0,0,0" />
+
+		<Button x:Name="BtnEnsureProxy"
+                Click="BtnEnsureProxy_Click"
+                Grid.Row="1"
+                Grid.Column="3"
+                Content="确认"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Margin="5,5,0,5"
+                Padding="10,5" />
+
+		<TextBlock Text="Hash Json url设置"
+                   Grid.Row="2"
+                   Grid.Column="0" />
+
+        <TextBox x:Name="TxtHashJsonEndPoint"
+                 Grid.Row="3"
+                 Grid.Column="0"
+                 Grid.ColumnSpan="3"
+                 Margin="0,5,5,5"
+                 Height="25"
+                 HorizontalAlignment="Stretch"
+                 GotFocus="TxtHashJsonEndPoint_OnGotFocusGotFocus"
+                 LostFocus="TxtHashJsonEndPoint_OnLostFocus"
+                 VerticalContentAlignment="Center" />
+
+        <TextBlock Text="请输入Hash Json的下载url，如果是目录请尾随一个 /"
+                   x:Name="SetHashJsonEndPointHint"
+                   Grid.Row="3"
+                   Grid.Column="0"
+                   Grid.ColumnSpan="3"
+                   VerticalAlignment="Center"
+                   Foreground="Gray"
+                   HorizontalAlignment="Stretch"
+                   IsHitTestVisible="False"
+                   Margin="5,0,0,0" />
+
+        <Button x:Name="BtnEnsureHashJsonEndPoint"
+                Click="BtnEnsureHashJsonEndPoint_Click"
+                Grid.Row="3"
+                Grid.Column="3"
+                Content="确认"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Margin="5,5,0,5"
+                Padding="10,5" />
+
+        <TextBlock Text="Download url设置"
+                   Grid.Row="4"
+                   Grid.Column="0" />
+
+        <TextBox x:Name="TxtDownloadEndPoint"
+                 Grid.Row="5"
+                 Grid.Column="0"
+                 Grid.ColumnSpan="3"
+                 Margin="0,5,5,5"
+                 Height="25"
+                 HorizontalAlignment="Stretch"
+                 GotFocus="TxtDownloadEndPoint_OnGotFocusGotFocus"
+                 LostFocus="TxtDownloadEndPoint_OnLostFocus"
+                 VerticalContentAlignment="Center" />
+
+        <TextBlock Text="请输入更新文件的下载url，如果是目录请尾随一个 /"
+                   x:Name="SetDownloadEndPointHint"
+                   Grid.Row="5"
+                   Grid.Column="0"
+                   Grid.ColumnSpan="3"
+                   VerticalAlignment="Center"
+                   Foreground="Gray"
+                   HorizontalAlignment="Stretch"
+                   IsHitTestVisible="False"
+                   Margin="5,0,0,0" />
+
+        <Button x:Name="BtnEnsureDownloadEndPoint"
+                Click="BtnEnsureDownloadEndPoint_Click"
+                Grid.Row="5"
+                Grid.Column="3"
+                Content="确认"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Margin="5,5,0,5"
+                Padding="10,5" />
+
+	</Grid>
 </UserControl>

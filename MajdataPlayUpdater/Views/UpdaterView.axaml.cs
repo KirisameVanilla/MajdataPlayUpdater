@@ -19,7 +19,6 @@ namespace MajdataPlayUpdater.Views;
 public partial class UpdaterView : UserControl
 {
     private const int VersionCode = 1;
-    private const string BaseApiUrl = "https://majdataplay-distrib.work/";
     private readonly UpdateManager updater = new();
     private ScrollViewer? _logScrollViewer;
 
@@ -29,15 +28,23 @@ public partial class UpdaterView : UserControl
         Loaded += MainWindow_Loaded;
         DataContext = new UpdaterViewModel();
         SettingsManager.Load();
-        TxtProxy.Text = SettingsManager.Settings.ProxyUrl;
         TxtMajdataPath.Text = SettingsManager.Settings.LastOpenedFolder;
-        ViewModel.HttpHelper.RecreateHttpClientWithProxy(SettingsManager.Settings.ProxyUrl);
-        SetProxyHint.IsVisible = SettingsManager.Settings.ProxyUrl == string.Empty;
+        OnSwitchBack();
 
         updater.SetBaseLocalPath(SettingsManager.Settings.LastOpenedFolder);
-        updater.SetHttpHelper(ViewModel.HttpHelper);
         updater.LogMessage += OnLogMessageReceived;
         CheckVersion();
+    }
+
+    public void OnSwitchBack()
+    {
+        ViewModel.HttpHelper.RecreateHttpClientWithProxy(SettingsManager.Settings.ProxyUrl);
+
+        updater.SetHttpHelper(ViewModel.HttpHelper);
+        if (!string.IsNullOrEmpty(SettingsManager.Settings.ProxyUrl.Trim()))
+            AddLog("当前代理为: " + SettingsManager.Settings.ProxyUrl);
+        else
+            AddLog("当前无代理");
     }
 
     private UpdaterViewModel ViewModel => DataContext as UpdaterViewModel ?? new UpdaterViewModel();
@@ -68,9 +75,7 @@ public partial class UpdaterView : UserControl
         BtnPerformUpdate.IsEnabled = false;
         BtnCheckUpdate.IsEnabled = false;
         BtnGenerateJson.IsEnabled = false;
-        BtnEnsureProxy.IsEnabled = false;
         CmbReleaseType.IsEnabled = false;
-        TxtProxy.IsEnabled = false;
         TxtMajdataPath.IsEnabled = false;
 
         ProgressBar.IsIndeterminate = true;
@@ -81,9 +86,7 @@ public partial class UpdaterView : UserControl
         BtnPerformUpdate.IsEnabled = true;
         BtnCheckUpdate.IsEnabled = true;
         BtnGenerateJson.IsEnabled = true;
-        BtnEnsureProxy.IsEnabled = true;
         CmbReleaseType.IsEnabled = true;
-        TxtProxy.IsEnabled = true;
         TxtMajdataPath.IsEnabled = true;
 
         ProgressBar.IsIndeterminate = false;
@@ -187,16 +190,6 @@ public partial class UpdaterView : UserControl
         }
     }
 
-    private void BtnEnsureProxy_Click(object sender, RoutedEventArgs e)
-    {
-        var proxyUrl = TxtProxy.Text?.Trim() ?? string.Empty;
-        SettingsManager.Settings.ProxyUrl = proxyUrl;
-        SettingsManager.Save();
-        ViewModel.HttpHelper.RecreateHttpClientWithProxy(proxyUrl);
-        updater.SetHttpHelper(ViewModel.HttpHelper);
-        AddLog("代理设置切换为: " + (proxyUrl == string.Empty ? "无代理" : proxyUrl));
-    }
-
     private void OnLogMessageReceived(string message)
     {
         Dispatcher.UIThread.Post(() => AddLog(message));
@@ -240,23 +233,13 @@ public partial class UpdaterView : UserControl
         AddLog($"正在获取 {releaseType} 版本信息...");
         try
         {
-            return await ViewModel.HttpHelper.Client.GetStringAsync($"{BaseApiUrl}{releaseType}.json");
+            return await ViewModel.HttpHelper.Client.GetStringAsync($"{SettingsManager.Settings.HashJsonEndPoint}{releaseType}.json");
         }
         catch (HttpRequestException ex)
         {
             AddLog($"API请求失败: {ex.StatusCode} - {ex.Message}");
             throw;
         }
-    }
-
-    private void TxtProxy_OnLostFocus(object? sender, RoutedEventArgs e)
-    {
-        SetProxyHint.IsVisible = (TxtProxy.Text?.Trim() ?? string.Empty) == string.Empty;
-    }
-
-    private void TxtProxy_OnGotFocusGotFocus(object? sender, GotFocusEventArgs e)
-    {
-        SetProxyHint.IsVisible = false;
     }
 
     private async void BtnSelectMajdataPath_OnClickAsync(object? sender, RoutedEventArgs e)

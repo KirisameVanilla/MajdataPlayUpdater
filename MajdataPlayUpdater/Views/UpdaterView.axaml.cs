@@ -18,7 +18,7 @@ namespace MajdataPlayUpdater.Views;
 
 public partial class UpdaterView : UserControl
 {
-    private const int VersionCode = 1;
+    private const int VersionCode = 2;
     private readonly UpdateManager updater = new();
     private ScrollViewer? _logScrollViewer;
 
@@ -58,7 +58,7 @@ public partial class UpdaterView : UserControl
     {
         var versionJson =
             await ViewModel.HttpHelper.Client.GetStringAsync(
-                "https://majdataplay-distrib.work/MajdataPlayUpdaterVersion.json");
+                "https://majdataplay.work/MajdataPlayUpdaterVersion.json");
         using var doc = JsonDocument.Parse(versionJson);
 
         var versionCode = doc.RootElement.GetProperty("VersionCode").GetInt32();

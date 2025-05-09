@@ -62,7 +62,7 @@ public partial class UpdaterView : UserControl
 
         var versionCode = doc.RootElement.GetProperty("VersionCode").GetInt32();
         var changelog = doc.RootElement.GetProperty("Changelog").GetString() ?? string.Empty;
-        if (versionCode != VersionCode)
+        if (versionCode > VersionCode)
         {
             var dialog = new Dialog("本体有更新！！", changelog);
             await dialog.ShowDialog(VisualRoot as Window);

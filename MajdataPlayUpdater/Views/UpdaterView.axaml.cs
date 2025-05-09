@@ -1,24 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using MajdataPlayUpdater.Models;
 using MajdataPlayUpdater.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace MajdataPlayUpdater.Views;
 
 public partial class UpdaterView : UserControl
 {
-    private const int VersionCode = 2;
+    private const int VersionCode = 3;
     private readonly UpdateManager updater = new();
     private ScrollViewer? _logScrollViewer;
 
@@ -261,6 +260,11 @@ public partial class UpdaterView : UserControl
                 SettingsManager.Settings.LastOpenedFolder = folder[0].Path.LocalPath;
                 SettingsManager.Save();
                 updater.SetBaseLocalPath(SettingsManager.Settings.LastOpenedFolder);
+                if (!File.Exists(Path.Combine(SettingsManager.Settings.LastOpenedFolder, "MajdataPlay.exe")))
+                {
+                    var dialog = new Dialog("Warning", "您当前选择的文件夹中无MajdataPlay.exe文件。如果您试图更新游戏，请重新选择正确目录。");
+                    await dialog.ShowDialog(VisualRoot as Window);
+                }
             }
         }
         else

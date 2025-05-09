@@ -18,6 +18,17 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
 
+	<PropertyGroup>
+		<ApplicationIcon>salt.ico</ApplicationIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="salt.ico">
+			<Pack>False</Pack>
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
   </ItemGroup>

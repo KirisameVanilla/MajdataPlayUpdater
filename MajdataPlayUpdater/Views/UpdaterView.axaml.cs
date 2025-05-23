@@ -59,7 +59,7 @@ public partial class UpdaterView : UserControl
         AddLog("开始检测更新");
         var versionJson =
             await ViewModel.HttpHelper.Client.GetStringAsync(
-                "https://majdataplay.work/MajdataPlayUpdaterVersion.json");
+                "https://majdataplay.work/Updater/MajdataPlayUpdaterVersion.json");
         using var doc = JsonDocument.Parse(versionJson);
 
         var versionCode = doc.RootElement.GetProperty("VersionCode").GetInt32();
@@ -108,7 +108,7 @@ public partial class UpdaterView : UserControl
 
     private async Task DownloadTempUpdater(string expectedHash)
     {
-        var downloadUrl = "https://majdataplay.work/MajdataPlayUpdater.Desktop.exe";
+        var downloadUrl = "https://majdataplay.work/Updater/MajdataPlayUpdater.Desktop.exe";
         var tmpFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MajdataPlayUpdater.Desktop.exe.tmp");
 
         using var response = await ViewModel.HttpHelper.Client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);

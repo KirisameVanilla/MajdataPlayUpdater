@@ -6,7 +6,7 @@
         Width="300" Height="150"
         x:Class="MajdataPlayUpdater.Views.Dialog"
         Title="Dialog">
-    <Grid Margin="20" RowDefinitions="Auto,* ,Auto">
+    <Grid Margin="20" RowDefinitions="Auto,* ,Auto" x:Name="MainGrid">
         <TextBlock x:Name="ContentTextBlock"
                    Text="这是一个弹窗!"
                    Grid.Row="0"
@@ -15,10 +15,18 @@
                    TextAlignment="Left"
                    TextWrapping="Wrap" />
 
-        <Button Content="我知道了"
-                Grid.Row="2"
-                HorizontalAlignment="Center"
-                Click="OnCloseClick" />
+        <StackPanel Orientation="Horizontal"
+                    x:Name="ButtonStackPanel"
+                    HorizontalAlignment="Center"
+                    Spacing="10"
+                    Grid.Row="2">
+            <Button Content="我知道了"
+                    HorizontalAlignment="Center"
+                    Click="OnCloseClick"
+                    MinWidth="80" />
+        </StackPanel>
+
+        
     </Grid>
 
 </Window>

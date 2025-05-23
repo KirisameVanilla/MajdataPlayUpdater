@@ -1,5 +1,10 @@
+using System;
+using System.Reflection.Metadata;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 
 namespace MajdataPlayUpdater.Views;
 
@@ -17,8 +22,19 @@ public partial class Dialog : Window
         ContentTextBlock.Text = content;
     }
 
-    private void OnCloseClick(object? sender, RoutedEventArgs e)
+    public void AddButton(string content, Action action)
     {
-        Close();
+        var button = new Button { Content = content, MinWidth = 80, HorizontalAlignment = HorizontalAlignment.Center};
+        button.Click += (sender, e) => { action.Invoke(); };
+        ButtonStackPanel.Children.Add(button);
     }
+
+    public void AddButton(string content, Func<Task> asyncAction)
+    {
+        var button = new Button { Content = content, MinWidth = 80, HorizontalAlignment = HorizontalAlignment.Center };
+        button.Click += async (s, e) => await asyncAction();
+        ButtonStackPanel.Children.Add(button);
+    }
+
+    private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
 }

@@ -70,10 +70,20 @@ public partial class UpdaterView : UserControl
             var dialog = new Dialog("本体有更新！！", changelog);
             dialog.AddButton("下载并更新", async () =>
             {
-                await DownloadTempUpdater(expectedHash);
+                dialog.Close();
+                try
+                {
+                    await DownloadTempUpdater(expectedHash);
+                }
+                catch (Exception e)
+                {
+                    AddLog(e.Message);
+                    return;
+                }
+                
                 var currentName = Process.GetCurrentProcess().MainModule?.FileName;
                 var newName = currentName + ".tmp";
-                string cmdCommand = $"/C ping 127.0.0.1 -n 2 > nul && " +
+                string cmdCommand = $"/C ping 127.0.0.1 -n 3 > nul && " +
                                     $"del \"{currentName}\" && " +
                                     $"rename \"{newName}\" \"{Path.GetFileName(currentName)}\" && " +
                                     $"start \"\" \"{currentName}\"";
@@ -100,22 +110,51 @@ public partial class UpdaterView : UserControl
     {
         var downloadUrl = "https://majdataplay.work/MajdataPlayUpdater.Desktop.exe";
         var tmpFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MajdataPlayUpdater.Desktop.exe.tmp");
-        using (var response = await ViewModel.HttpHelper.Client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
-        {
-            response.EnsureSuccessStatusCode();
 
-            await using var contentStream = await response.Content.ReadAsStreamAsync();
-            await using var fileStream = new FileStream(tmpFilePath, FileMode.Create);
-            await contentStream.CopyToAsync(fileStream);
+        using var response = await ViewModel.HttpHelper.Client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+
+        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+        var canReportProgress = totalBytes != -1;
+
+        await using var contentStream = await response.Content.ReadAsStreamAsync();
+        await using var fileStream =
+            new FileStream(tmpFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+
+        byte[] buffer = new byte[81920];
+        long totalRead = 0;
+        int read;
+
+        while ((read = await contentStream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+        {
+            await fileStream.WriteAsync(buffer.AsMemory(0, read));
+            totalRead += read;
+
+            if (canReportProgress)
+            {
+                double percent = (totalRead / (double)totalBytes) * 100;
+                AddLog($"下载进度: {percent:F2}%");
+            }
+            else
+            {
+                AddLog($"已下载: {totalRead} 字节");
+            }
         }
+        contentStream.Close();
+        fileStream.Close();
+
+        AddLog("下载完成，正在校验哈希...");
 
         var downloadedHash = UpdateManager.CalculateFileHash(tmpFilePath);
-
+        AddLog(downloadedHash);
         if (!string.Equals(downloadedHash, expectedHash, StringComparison.OrdinalIgnoreCase))
         {
-            throw new Exception("错误: 下载文件哈希不匹配: MajdataPlayUpdater.Desktop.exe");
+            throw new Exception("❌ 错误: 下载文件哈希不匹配: MajdataPlayUpdater.Desktop.exe");
         }
+
+        AddLog("✅ 哈希校验通过！");
     }
+
 
     private void DisableUiEvents()
     {

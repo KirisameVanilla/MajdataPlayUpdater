@@ -8,6 +8,7 @@ using MajdataPlayUpdater.Models;
 using MajdataPlayUpdater.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
@@ -17,7 +18,7 @@ namespace MajdataPlayUpdater.Views;
 
 public partial class UpdaterView : UserControl
 {
-    private const int VersionCode = 3;
+    private const int VersionCode = 4;
     private readonly UpdateManager updater = new();
     private ScrollViewer? _logScrollViewer;
 
@@ -55,6 +56,7 @@ public partial class UpdaterView : UserControl
 
     private async Task CheckVersion()
     {
+        AddLog("开始检测更新");
         var versionJson =
             await ViewModel.HttpHelper.Client.GetStringAsync(
                 "https://majdataplay.work/MajdataPlayUpdaterVersion.json");
@@ -62,10 +64,56 @@ public partial class UpdaterView : UserControl
 
         var versionCode = doc.RootElement.GetProperty("VersionCode").GetInt32();
         var changelog = doc.RootElement.GetProperty("Changelog").GetString() ?? string.Empty;
+        var expectedHash = doc.RootElement.GetProperty("SHA256").GetString() ?? string.Empty;
         if (versionCode > VersionCode)
         {
             var dialog = new Dialog("本体有更新！！", changelog);
+            dialog.AddButton("下载并更新", async () =>
+            {
+                await DownloadTempUpdater(expectedHash);
+                var currentName = Process.GetCurrentProcess().MainModule?.FileName;
+                var newName = currentName + ".tmp";
+                string cmdCommand = $"/C ping 127.0.0.1 -n 2 > nul && " +
+                                    $"del \"{currentName}\" && " +
+                                    $"rename \"{newName}\" \"{Path.GetFileName(currentName)}\" && " +
+                                    $"start \"\" \"{currentName}\"";
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = cmdCommand,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true
+                });
+                Shutdown();
+            });
             await dialog.ShowDialog(VisualRoot as Window);
+        }
+        else
+        {
+            AddLog("无更新");
+        }
+    }
+
+    private void Shutdown() => Environment.Exit(0);
+
+    private async Task DownloadTempUpdater(string expectedHash)
+    {
+        var downloadUrl = "https://majdataplay.work/MajdataPlayUpdater.Desktop.exe";
+        var tmpFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MajdataPlayUpdater.Desktop.exe.tmp");
+        using (var response = await ViewModel.HttpHelper.Client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
+        {
+            response.EnsureSuccessStatusCode();
+
+            await using var contentStream = await response.Content.ReadAsStreamAsync();
+            await using var fileStream = new FileStream(tmpFilePath, FileMode.Create);
+            await contentStream.CopyToAsync(fileStream);
+        }
+
+        var downloadedHash = UpdateManager.CalculateFileHash(tmpFilePath);
+
+        if (!string.Equals(downloadedHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new Exception("错误: 下载文件哈希不匹配: MajdataPlayUpdater.Desktop.exe");
         }
     }
 

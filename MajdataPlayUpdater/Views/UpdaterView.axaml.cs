@@ -316,10 +316,16 @@ public partial class UpdaterView : UserControl
 
     private async Task<string> FetchUpdateInfoAsync(string releaseType)
     {
+        if (!Uri.TryCreate(SettingsManager.Settings.HashJsonEndPoint, UriKind.Absolute, out var uri))
+        {
+            throw new Exception("HashJsonUrl错误");
+        }
         AddLog($"正在获取 {releaseType} 版本信息...");
         try
         {
-            return await ViewModel.HttpHelper.Client.GetStringAsync($"{SettingsManager.Settings.HashJsonEndPoint}{releaseType}.json");
+            Uri jsonUri = new(uri, "hashes.json");
+            AddLog(jsonUri.AbsoluteUri);
+            return await ViewModel.HttpHelper.Client.GetStringAsync(jsonUri.AbsoluteUri);
         }
         catch (HttpRequestException ex)
         {

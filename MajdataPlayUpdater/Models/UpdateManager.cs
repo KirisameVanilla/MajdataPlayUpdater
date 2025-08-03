@@ -19,11 +19,12 @@ public class UpdateManager
     private HttpHelper? _httpHelper;
     private readonly HashSet<AssetInfo> _textFiles = [];
     private bool check;
+    private Dictionary<string, string>? _localHashes;
     public event Action<string>? LogMessage;
 
     public void SetAssets(string apiResponse)
     {
-        _assets = JsonSerializer.Deserialize<List<AssetInfo>>(apiResponse, JsonContext.IndentedOptions);
+        _assets = JsonSerializer.Deserialize(apiResponse, JsonContext.Default.ListAssetInfo);
     }
 
     public void SetHttpHelper(HttpHelper httpHelper)
@@ -34,6 +35,7 @@ public class UpdateManager
     public void SetBaseLocalPath(string baseLocalPath)
     {
         _baseLocalPath = baseLocalPath;
+        LoadLocalHashes();
     }
 
     public void SetBaseDownloadUrl(string baseDownloadUrl)
@@ -111,7 +113,7 @@ public class UpdateManager
 
     private async Task ProcessAssetAsync(AssetInfo asset)
     {
-        var localFilePath = Path.Combine(_baseLocalPath, asset.RelativePath.TrimStart('/'));
+        var localFilePath = Path.Combine(_baseLocalPath!, asset.RelativePath.TrimStart('/'));
         var downloadUrl = _baseDownloadUrl + asset.RelativePath;
 
         if (!File.Exists(localFilePath))
@@ -121,7 +123,21 @@ public class UpdateManager
             return;
         }
 
-        var localHash = CalculateFileHash(localFilePath);
+        // 如果没有本地hashes.json，则直接更新
+        if (_localHashes == null)
+        {
+            LogMessage?.Invoke($"无本地哈希信息: {localFilePath} - 将更新");
+            await DownloadFileAsync(downloadUrl, localFilePath, asset.SHA256);
+            return;
+        }
+
+        var localHash = GetLocalHash(asset.RelativePath);
+        if (localHash == null)
+        {
+            LogMessage?.Invoke($"本地hashes.json中未找到文件哈希: {asset.RelativePath} - 将更新");
+            await DownloadFileAsync(downloadUrl, localFilePath, asset.SHA256);
+            return;
+        }
 
         if (!string.Equals(localHash, asset.SHA256, StringComparison.OrdinalIgnoreCase))
         {
@@ -134,11 +150,17 @@ public class UpdateManager
     // 如果不是文本文件 并且哈希不同那么需要更新
     private bool CheckAsset(AssetInfo asset)
     {
-        var localFilePath = Path.Combine(_baseLocalPath, asset.RelativePath.TrimStart('/'));
+        // 如果没有本地hashes.json文件，则所有文件都需要更新
+        if (_localHashes == null)
+            return true;
+
+        var localFilePath = Path.Combine(_baseLocalPath!, asset.RelativePath.TrimStart('/'));
 
         if (!File.Exists(localFilePath)) return true;
 
-        var localHash = CalculateFileHash(localFilePath);
+        var localHash = GetLocalHash(asset.RelativePath);
+        if (localHash == null) return true; // 本地hashes.json中没有该文件信息，需要更新
+
         var isTextFile = localFilePath.EndsWith(".json") || localFilePath.EndsWith(".meta") ||
                          localFilePath.EndsWith(".browser");
 
@@ -157,6 +179,39 @@ public class UpdateManager
         return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
     }
 
+    private void LoadLocalHashes()
+    {
+        if (string.IsNullOrEmpty(_baseLocalPath))
+            return;
+
+        var hashesFilePath = Path.Combine(_baseLocalPath, "hashes.json");
+        if (!File.Exists(hashesFilePath))
+        {
+            LogMessage?.Invoke($"本地hashes.json文件不存在: {hashesFilePath}，将更新所有云端文件");
+            _localHashes = null; // 设置为null表示没有本地哈希文件
+            return;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(hashesFilePath);
+            var assets = JsonSerializer.Deserialize(json, JsonContext.Default.ListAssetInfo);
+            _localHashes = assets?.ToDictionary(asset => asset.RelativePath, asset => asset.SHA256) 
+                          ?? new Dictionary<string, string>();
+            LogMessage?.Invoke($"已加载本地hashes.json，包含 {_localHashes.Count} 个文件哈希");
+        }
+        catch (Exception ex)
+        {
+            LogMessage?.Invoke($"读取本地hashes.json失败: {ex.Message}，将更新所有云端文件");
+            _localHashes = null; // 设置为null表示无法使用本地哈希文件
+        }
+    }
+
+    private string? GetLocalHash(string relativePath)
+    {
+        return _localHashes?.GetValueOrDefault(relativePath);
+    }
+
     private async Task DownloadFileAsync(string url, string destinationPath, string expectedHash)
     {
         try
@@ -170,7 +225,7 @@ public class UpdateManager
 
             Directory.CreateDirectory(directoryName);
 
-            using (var response = await _httpHelper.Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            using (var response = await _httpHelper!.Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
 

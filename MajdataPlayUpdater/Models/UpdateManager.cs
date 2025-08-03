@@ -88,6 +88,10 @@ public class UpdateManager
 
         await Task.WhenAll(tasks);
 
+        // 下载云端 hashes.json 文件
+        await DownloadHashesJsonAsync();
+        LoadLocalHashes();
+
         LogMessage?.Invoke("更新处理完成");
     }
 
@@ -255,6 +259,50 @@ public class UpdateManager
         {
             LogMessage?.Invoke($"下载失败: {url} - {ex.Message}");
             throw;
+        }
+    }
+
+    private async Task DownloadHashesJsonAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_baseDownloadUrl) || string.IsNullOrEmpty(_baseLocalPath))
+            {
+                LogMessage?.Invoke("基础下载URL或本地路径未设置，跳过下载hashes.json");
+                return;
+            }
+
+            var hashesUrl = _baseDownloadUrl.TrimEnd('/') + "/hashes.json";
+            var hashesLocalPath = Path.Combine(_baseLocalPath, "hashes.json");
+
+            LogMessage?.Invoke("正在下载云端 hashes.json 文件...");
+
+            var directoryName = Path.GetDirectoryName(hashesLocalPath);
+            if (directoryName != null)
+            {
+                Directory.CreateDirectory(directoryName);
+            }
+
+            using (var response = await _httpHelper!.Client.GetAsync(hashesUrl, HttpCompletionOption.ResponseHeadersRead))
+            {
+                response.EnsureSuccessStatusCode();
+
+                await using var contentStream = await response.Content.ReadAsStreamAsync();
+                await using var fileStream = new FileStream(hashesLocalPath + ".tmp", FileMode.Create);
+                await contentStream.CopyToAsync(fileStream);
+            }
+
+            if (File.Exists(hashesLocalPath))
+                File.Delete(hashesLocalPath);
+
+            File.Move(hashesLocalPath + ".tmp", hashesLocalPath);
+            
+            LogMessage?.Invoke("云端 hashes.json 下载完成");
+        }
+        catch (Exception ex)
+        {
+            LogMessage?.Invoke($"下载云端 hashes.json 失败: {ex.Message}");
+            // 不抛出异常，因为这不是关键操作
         }
     }
 }

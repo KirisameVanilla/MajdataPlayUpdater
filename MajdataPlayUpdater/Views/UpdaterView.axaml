@@ -39,8 +39,8 @@
                   HorizontalAlignment="Stretch"
                   SelectedIndex="0">
             <ComboBoxItem Content="Nightly" />
-            <ComboBoxItem Content="Stable" />
-        </ComboBox>
+			<!-- <ComboBoxItem Content="Stable" /> -->
+		</ComboBox>
 
         <TextBox x:Name="TxtMajdataPath"
                  Grid.Row="1"

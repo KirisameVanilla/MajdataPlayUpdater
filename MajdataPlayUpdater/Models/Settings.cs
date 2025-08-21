@@ -8,4 +8,5 @@ public class Settings
     public string ProxyUrl { get; set; } = "";
     public string HashJsonEndPoint { get; set; } = "https://ghproxy.vanillaaaa.org/https://raw.githubusercontent.com/TeamMajdata/MajdataPlay_Build/refs/heads/master/";
     public string DownloadEndPoint { get; set; } = "https://ghproxy.vanillaaaa.org/https://raw.githubusercontent.com/TeamMajdata/MajdataPlay_Build/refs/heads/master/";
+    public string RepoEndPoint { get; set; } = "https://ghproxy.vanillaaaa.org/https://raw.githubusercontent.com/TeamMajdata/MajdataPlay_Build/refs/heads/master/";
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -52,6 +53,13 @@ public class UpdateManager
         }
 
         LogMessage?.Invoke("开始处理版本更新");
+
+        if (_localHashes == null)
+        {
+            LogMessage?.Invoke("全都要更新，直接下载zip覆盖了");
+            await DownloadZipAsync();
+            return;
+        }
 
         if (!check)
             _assetsOutdated = _assets.Where(CheckAsset).ToHashSet();
@@ -303,6 +311,75 @@ public class UpdateManager
         {
             LogMessage?.Invoke($"下载云端 hashes.json 失败: {ex.Message}");
             // 不抛出异常，因为这不是关键操作
+        }
+    }
+
+    private async Task DownloadZipAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_baseDownloadUrl) || string.IsNullOrEmpty(_baseLocalPath))
+            {
+                LogMessage?.Invoke("基础下载URL或本地路径未设置，跳过下载_archive.zip");
+                return;
+            }
+
+            var archiveUrl = "https://ghproxy.vanillaaaa.org/https://github.com/TeamMajdata/MajdataPlay_Build/archive/refs/heads/master.zip";
+            var archiveLocalPath = Path.Combine(_baseLocalPath, "_archive.zip");
+
+            LogMessage?.Invoke("正在下载云端 _archive.zip 文件...");
+
+            var directoryName = Path.GetDirectoryName(archiveLocalPath);
+            if (directoryName != null)
+            {
+                Directory.CreateDirectory(directoryName);
+            }
+
+            using (var response = await _httpHelper!.Client.GetAsync(archiveUrl, HttpCompletionOption.ResponseHeadersRead))
+            {
+                response.EnsureSuccessStatusCode();
+
+                await using var contentStream = await response.Content.ReadAsStreamAsync();
+                await using var fileStream = new FileStream(archiveLocalPath + ".tmp", FileMode.Create);
+                await contentStream.CopyToAsync(fileStream);
+            }
+
+            if (File.Exists(archiveLocalPath))
+                File.Delete(archiveLocalPath);
+
+            File.Move(archiveLocalPath + ".tmp", archiveLocalPath);
+
+            LogMessage?.Invoke("云端 _archive.zip 下载完成");
+
+            ZipFile.ExtractToDirectory(archiveLocalPath, _baseLocalPath, true);
+
+            MoveDirectoryContents(Path.Combine(_baseLocalPath, "MajdataPlay_Build-master"), _baseLocalPath);
+
+            Directory.Delete(Path.Combine(_baseLocalPath, "MajdataPlay_Build-master"), true);
+            File.Delete(archiveLocalPath);
+
+            LogMessage?.Invoke("_archive.zip 解压完成");
+        }
+        catch (Exception ex)
+        {
+            LogMessage?.Invoke($"下载云端 _archive.zip 失败: {ex.Message}");
+            // 不抛出异常，因为这不是关键操作
+        }
+    }
+
+    static void MoveDirectoryContents(string source, string target)
+    {
+        foreach (string filePath in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            string relativePath = filePath.Substring(source.Length + 1);
+            string destPath = Path.Combine(target, relativePath);
+
+            string destDir = Path.GetDirectoryName(destPath);
+            if (!Directory.Exists(destDir))
+                Directory.CreateDirectory(destDir);
+
+            File.Copy(filePath, destPath, true); // true = 覆盖
+            Console.WriteLine($"复制: {destPath}");
         }
     }
 }

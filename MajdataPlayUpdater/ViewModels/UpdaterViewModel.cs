@@ -11,7 +11,7 @@ public class UpdaterViewModel : ViewModelBase
     {
         return releaseType.ToLower() switch
         {
-            "nightly" => SettingsManager.Settings.DownloadEndPoint,
+            "nightly" => SettingsManager.Settings.RepoEndPoint,
             "stable" => throw new ArgumentException("无效的版本类型"),
             _ => throw new ArgumentException("无效的版本类型")
         };

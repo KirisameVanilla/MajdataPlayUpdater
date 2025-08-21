@@ -316,7 +316,7 @@ public partial class UpdaterView : UserControl
 
     private async Task<string> FetchUpdateInfoAsync(string releaseType)
     {
-        if (!Uri.TryCreate(SettingsManager.Settings.HashJsonEndPoint, UriKind.Absolute, out var uri))
+        if (!Uri.TryCreate(SettingsManager.Settings.RepoEndPoint, UriKind.Absolute, out var uri))
         {
             throw new Exception("HashJsonUrl错误");
         }

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Http;
 
 namespace MajdataPlayUpdater.Models;
@@ -11,18 +12,16 @@ public class HttpHelper
     {
         Client.Dispose();
 
-        if (proxyUrl.Trim() == string.Empty)
+        var isProxyUrlEmpty = proxyUrl.Trim() == string.Empty;
+
+        var handler = new HttpClientHandler
         {
-            Client = new HttpClient();
-        }
-        else
-        {
-            var handler = new HttpClientHandler
-            {
-                Proxy = new WebProxy(proxyUrl),
-                UseProxy = true
-            };
-            Client = new HttpClient(handler);
-        }
+            Proxy = isProxyUrlEmpty ? null : new WebProxy(proxyUrl),
+            UseProxy = !isProxyUrlEmpty,
+            
+        };
+
+        Client = new HttpClient(handler);
+        Client.Timeout = TimeSpan.FromMinutes(5);
     }
 }

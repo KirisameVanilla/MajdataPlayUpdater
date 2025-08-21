@@ -18,7 +18,7 @@ namespace MajdataPlayUpdater.Views;
 
 public partial class UpdaterView : UserControl
 {
-    private const int VersionCode = 4;
+    private const int VersionCode = 5;
     private readonly UpdateManager updater = new();
     private ScrollViewer? _logScrollViewer;
 

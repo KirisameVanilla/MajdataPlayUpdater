@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "majdata-hub",
+  "productName": "Majdata Hub",
   "version": "0.1.0",
   "identifier": "com.kirisamevanilla.majdata-hub",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm vite:dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "pnpm vite:build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
-        "title": "majdata-hub",
+        "title": "Majdata Hub",
         "width": 800,
         "height": 600
       }

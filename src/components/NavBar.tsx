@@ -1,5 +1,5 @@
 import { NavLink, ScrollArea } from '@mantine/core';
-import { IconHome, IconChartBar, IconPalette } from '@tabler/icons-react';
+import { IconHome, IconChartBar, IconPalette, IconSettings } from '@tabler/icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -9,6 +9,7 @@ const navItems: NavItem[] = [
   { label: 'Home', icon: IconHome, path: '/' },
   { label: 'Chart', icon: IconChartBar, path: '/chart' },
   { label: 'Skin', icon: IconPalette, path: '/skin' },
+  { label: 'Setting', icon: IconSettings, path: '/setting' },
 ];
 
 export function NavBar() {

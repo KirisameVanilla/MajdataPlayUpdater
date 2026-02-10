@@ -6,16 +6,15 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
-    "tauri": "tauri",
-    "vite:dev": "vite",
-    "vite:build": "tsc && vite build",
-    "vite:preview": "vite preview"
+    "tauri": "tauri"
   },
   "dependencies": {
     "@mantine/core": "^8.3.14",
     "@mantine/hooks": "^8.3.14",
+    "@mantine/notifications": "^8.3.14",
     "@tabler/icons-react": "^3.36.1",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-opener": "^2",
     "framer-motion": "^12.34.0",
     "react": "^19.1.0",

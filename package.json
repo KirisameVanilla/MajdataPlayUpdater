@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "vite:dev": "vite",
+    "vite:build": "tsc && vite build"
   },
   "dependencies": {
     "@mantine/core": "^8.3.14",

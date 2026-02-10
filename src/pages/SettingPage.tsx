@@ -3,9 +3,18 @@ import { Container, Title, Text, Card, TextInput, Button, Group, Stack, ActionIc
 import { IconFolder, IconDeviceFloppy, IconFolderOpen, IconNetwork } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { open } from '@tauri-apps/plugin-dialog';
+import { usePathContext } from '../contexts';
 
 export function SettingPage() {
-  const [gamePath, setGamePath] = useState<string>('./game');
+  const { appExeFolderPath, defaultGameFolderPath } = usePathContext();
+  if (!appExeFolderPath || !defaultGameFolderPath) {
+    return (
+      <Container size="xl" py="xl">
+        <Text c="red">无法获取应用程序路径，设置页面无法使用。</Text>
+      </Container>
+    );
+  }
+  const [gamePath, setGamePath] = useState<string>(defaultGameFolderPath);
   const [httpProxy, setHttpProxy] = useState<string>('');
 
   useEffect(() => {

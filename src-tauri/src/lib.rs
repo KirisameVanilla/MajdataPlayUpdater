@@ -17,6 +17,10 @@ pub fn run() {
             get_app_exe_path, 
             get_app_exe_folder_path,
             file_exists,
+            list_bat_files,
+            execute_bat_file,
+            get_launch_options,
+            launch_game,
             // 校验和相关命令
             calculate_checksums,
             save_checksums_to_file,

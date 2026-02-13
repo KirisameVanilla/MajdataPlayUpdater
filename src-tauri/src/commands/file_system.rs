@@ -94,9 +94,12 @@ pub fn get_launch_options() -> Vec<LaunchOption> {
 /// Tauri命令：根据启动选项ID启动游戏
 #[tauri::command]
 pub fn launch_game(game_dir: String, option_id: String) -> Result<(), String> {
+    tracing::info!("准备启动游戏，游戏目录: {}，启动选项: {}", game_dir, option_id);
+    
     let game_exe = Path::new(&game_dir).join("MajdataPlay.exe");
     
     if !game_exe.exists() {
+        tracing::error!("游戏程序不存在: {:?}", game_exe);
         return Err(format!("游戏程序不存在: {}", game_exe.display()));
     }
     
@@ -110,8 +113,13 @@ pub fn launch_game(game_dir: String, option_id: String) -> Result<(), String> {
             "vulkan" => vec!["-force-vulkan"],
             "test" => vec!["--test-mode"],
             "edit" => vec!["--view-mode"],
-            _ => return Err(format!("未知的启动选项: {}", option_id)),
+            _ => {
+                tracing::error!("未知的启动选项: {}", option_id);
+                return Err(format!("未知的启动选项: {}", option_id));
+            }
         };
+        
+        tracing::info!("使用参数启动游戏: {:?}", args);
         
         // 启动游戏
         match Command::new(&game_exe)
@@ -120,6 +128,7 @@ pub fn launch_game(game_dir: String, option_id: String) -> Result<(), String> {
             .spawn()
         {
             Ok(_) => {
+                tracing::info!("游戏启动成功");
                 // 如果是编辑模式，等待一下然后启动编辑器
                 if option_id == "edit" {
                     // 注意：这里只启动游戏，编辑器需要用户手动启动
@@ -127,7 +136,10 @@ pub fn launch_game(game_dir: String, option_id: String) -> Result<(), String> {
                 }
                 Ok(())
             },
-            Err(e) => Err(format!("启动游戏失败: {}", e)),
+            Err(e) => {
+                tracing::error!("启动游戏失败: {}", e);
+                Err(format!("启动游戏失败: {}", e))
+            }
         }
     }
     
@@ -174,9 +186,12 @@ pub fn list_bat_files(dir_path: String) -> Result<Vec<String>, String> {
 /// Tauri命令：执行指定的 .bat 文件（已弃用，保留用于兼容）
 #[tauri::command]
 pub fn execute_bat_file(dir_path: String, bat_file: String) -> Result<(), String> {
+    tracing::info!("执行 BAT 文件: {}/{}", dir_path, bat_file);
+    
     let bat_path = Path::new(&dir_path).join(&bat_file);
     
     if !bat_path.exists() {
+        tracing::error!("BAT 文件不存在: {:?}", bat_path);
         return Err(format!("BAT 文件不存在: {}", bat_path.display()));
     }
     
@@ -187,8 +202,14 @@ pub fn execute_bat_file(dir_path: String, bat_file: String) -> Result<(), String
             .current_dir(&dir_path)
             .spawn()
         {
-            Ok(_) => Ok(()),
-            Err(e) => Err(format!("执行 BAT 文件失败: {}", e)),
+            Ok(_) => {
+                tracing::info!("BAT 文件执行成功");
+                Ok(())
+            },
+            Err(e) => {
+                tracing::error!("执行 BAT 文件失败: {}", e);
+                Err(format!("执行 BAT 文件失败: {}", e))
+            }
         }
     }
     

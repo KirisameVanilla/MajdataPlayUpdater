@@ -12,6 +12,17 @@ pub struct LaunchOption {
     pub description: String,
 }
 
+/// 谱面信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChartInfo {
+    pub name: String,
+    pub category: String,
+    pub has_bg: bool,
+    pub has_track: bool,
+    pub has_maidata: bool,
+    pub has_video: bool,
+}
+
 /// Tauri命令：获取应用程序可执行文件的完整路径
 #[tauri::command]
 pub fn get_app_exe_path() -> Result<String, String> {
@@ -216,5 +227,179 @@ pub fn execute_bat_file(dir_path: String, bat_file: String) -> Result<(), String
     #[cfg(not(target_os = "windows"))]
     {
         Err("此功能仅在 Windows 上可用".to_string())
+    }
+}
+
+/// Tauri命令：列出所有谱面分类
+#[tauri::command]
+pub fn list_chart_categories(maicharts_dir: String) -> Result<Vec<String>, String> {
+    let path = Path::new(&maicharts_dir);
+    
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    
+    if !path.is_dir() {
+        return Err(format!("路径不是目录: {}", maicharts_dir));
+    }
+    
+    let mut categories = Vec::new();
+    
+    match fs::read_dir(path) {
+        Ok(entries) => {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    if entry.path().is_dir() {
+                        if let Some(name) = entry.file_name().to_str() {
+                            categories.push(name.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => return Err(format!("读取目录失败: {}", e)),
+    }
+    
+    categories.sort();
+    Ok(categories)
+}
+
+/// Tauri命令：列出某个分类下的所有谱面
+#[tauri::command]
+pub fn list_charts_in_category(maicharts_dir: String, category: String) -> Result<Vec<ChartInfo>, String> {
+    let category_path = Path::new(&maicharts_dir).join(&category);
+    
+    if !category_path.exists() {
+        return Ok(Vec::new());
+    }
+    
+    if !category_path.is_dir() {
+        return Err(format!("分类路径不是目录: {}", category_path.display()));
+    }
+    
+    let mut charts = Vec::new();
+    
+    match fs::read_dir(&category_path) {
+        Ok(entries) => {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    if entry.path().is_dir() {
+                        if let Some(name) = entry.file_name().to_str() {
+                            let chart_path = entry.path();
+                            
+                            charts.push(ChartInfo {
+                                name: name.to_string(),
+                                category: category.clone(),
+                                has_bg: chart_path.join("bg.jpg").exists() || chart_path.join("bg.png").exists(),
+                                has_track: chart_path.join("track.mp3").exists() || chart_path.join("track.ogg").exists(),
+                                has_maidata: chart_path.join("maidata.txt").exists(),
+                                has_video: chart_path.join("pv.mp4").exists() || chart_path.join("bg.mp4").exists(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => return Err(format!("读取目录失败: {}", e)),
+    }
+    
+    charts.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(charts)
+}
+
+/// Tauri命令：删除谱面
+#[tauri::command]
+pub fn delete_chart(maicharts_dir: String, category: String, chart_name: String) -> Result<(), String> {
+    let chart_path = Path::new(&maicharts_dir).join(&category).join(&chart_name);
+    
+    if !chart_path.exists() {
+        return Err(format!("谱面不存在: {}", chart_path.display()));
+    }
+    
+    if !chart_path.is_dir() {
+        return Err(format!("路径不是目录: {}", chart_path.display()));
+    }
+    
+    match fs::remove_dir_all(&chart_path) {
+        Ok(_) => {
+            tracing::info!("删除谱面成功: {:?}", chart_path);
+            Ok(())
+        },
+        Err(e) => {
+            tracing::error!("删除谱面失败: {}", e);
+            Err(format!("删除谱面失败: {}", e))
+        }
+    }
+}
+
+/// Tauri命令：移动谱面到另一个分类
+#[tauri::command]
+pub fn move_chart(maicharts_dir: String, from_category: String, to_category: String, chart_name: String) -> Result<(), String> {
+    let from_path = Path::new(&maicharts_dir).join(&from_category).join(&chart_name);
+    let to_category_path = Path::new(&maicharts_dir).join(&to_category);
+    let to_path = to_category_path.join(&chart_name);
+    
+    if !from_path.exists() {
+        return Err(format!("源谱面不存在: {}", from_path.display()));
+    }
+    
+    // 确保目标分类存在
+    if !to_category_path.exists() {
+        fs::create_dir_all(&to_category_path)
+            .map_err(|e| format!("创建目标分类失败: {}", e))?;
+    }
+    
+    // 检查目标位置是否已存在同名谱面
+    if to_path.exists() {
+        return Err(format!("目标位置已存在同名谱面: {}", to_path.display()));
+    }
+    
+    match fs::rename(&from_path, &to_path) {
+        Ok(_) => {
+            tracing::info!("移动谱面成功: {:?} -> {:?}", from_path, to_path);
+            Ok(())
+        },
+        Err(e) => {
+            tracing::error!("移动谱面失败: {}", e);
+            Err(format!("移动谱面失败: {}", e))
+        }
+    }
+}
+
+/// Tauri命令：创建新的谱面分类
+#[tauri::command]
+pub fn create_chart_category(maicharts_dir: String, category: String) -> Result<(), String> {
+    let category_path = Path::new(&maicharts_dir).join(&category);
+    
+    if category_path.exists() {
+        return Err(format!("分类已存在: {}", category));
+    }
+    
+    match fs::create_dir_all(&category_path) {
+        Ok(_) => {
+            tracing::info!("创建分类成功: {:?}", category_path);
+            Ok(())
+        },
+        Err(e) => {
+            tracing::error!("创建分类失败: {}", e);
+            Err(format!("创建分类失败: {}", e))
+        }
+    }
+}
+
+/// Tauri命令：创建目录
+#[tauri::command]
+pub fn create_directory(path: String) -> Result<(), String> {
+    let dir_path = Path::new(&path);
+    
+    match fs::create_dir_all(&dir_path) {
+        Ok(_) => {
+            tracing::info!("创建目录成功: {:?}", dir_path);
+            Ok(())
+        },
+        Err(e) => {
+            tracing::error!("创建目录失败: {}", e);
+            Err(format!("创建目录失败: {}", e))
+        }
     }
 }

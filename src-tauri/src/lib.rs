@@ -105,6 +105,13 @@ pub fn run() {
             execute_bat_file,
             get_launch_options,
             launch_game,
+            // 谱面管理相关命令
+            list_chart_categories,
+            list_charts_in_category,
+            delete_chart,
+            move_chart,
+            create_chart_category,
+            create_directory,
             // 校验和相关命令
             calculate_checksums,
             save_checksums_to_file,
@@ -113,7 +120,8 @@ pub fn run() {
             download_and_extract,
             // 网络相关命令
             download_file_to_path,
-            fetch_remote_hashes
+            fetch_remote_hashes,
+            fetch_chart_list
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

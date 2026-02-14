@@ -35,7 +35,7 @@ export function Layout({ children }: LayoutProps) {
         <NavBar />
       </AppShell.Navbar>
 
-      <AppShell.Main className="bg-white">
+      <AppShell.Main className="bg-white overflow-y-auto">
         {children}
       </AppShell.Main>
     </AppShell>

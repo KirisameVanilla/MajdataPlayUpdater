@@ -12,11 +12,18 @@ export function ChartPage() {
   const [hasGameExe, setHasGameExe] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [activeTab, setActiveTab] = useState<string | null>('local');
+  const [localRefreshTrigger, setLocalRefreshTrigger] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     checkGameExe();
   }, [defaultGameFolderPath]);
+
+  useEffect(() => {
+    if (activeTab === 'local') {
+      setLocalRefreshTrigger(prev => prev + 1);
+    }
+  }, [activeTab]);
 
   const checkGameExe = async () => {
     if (!defaultGameFolderPath) {
@@ -87,7 +94,7 @@ export function ChartPage() {
         </Tabs.List>
 
         <Tabs.Panel value="local" pt="md">
-          <LocalCharts onRefresh={checkGameExe} />
+          <LocalCharts onRefresh={checkGameExe} refreshTrigger={localRefreshTrigger} />
         </Tabs.Panel>
 
         <Tabs.Panel value="online" pt="md">

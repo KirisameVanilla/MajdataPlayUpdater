@@ -23,6 +23,12 @@ pub struct ChartInfo {
     pub has_video: bool,
 }
 
+/// 皮肤信息
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkinInfo {
+    pub name: String,
+}
+
 /// Tauri命令：获取应用程序可执行文件的完整路径
 #[tauri::command]
 pub fn get_app_exe_path() -> Result<String, String> {
@@ -400,6 +406,72 @@ pub fn create_directory(path: String) -> Result<(), String> {
         Err(e) => {
             tracing::error!("创建目录失败: {}", e);
             Err(format!("创建目录失败: {}", e))
+        }
+    }
+}
+
+/// Tauri命令：列出所有皮肤
+#[tauri::command]
+pub fn list_skins(skins_dir: String) -> Result<Vec<SkinInfo>, String> {
+    let path = Path::new(&skins_dir);
+    
+    if !path.exists() {
+        // 如果目录不存在，尝试创建
+        fs::create_dir_all(path)
+            .map_err(|e| format!("创建皮肤目录失败: {}", e))?;
+        return Ok(Vec::new());
+    }
+    
+    if !path.is_dir() {
+        return Err(format!("路径不是目录: {}", skins_dir));
+    }
+    
+    let mut skins = Vec::new();
+    
+    match fs::read_dir(path) {
+        Ok(entries) => {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let entry_path = entry.path();
+                    // 列出文件夹（皮肤是解压后的文件夹）
+                    if entry_path.is_dir() {
+                        if let Some(name) = entry.file_name().to_str() {
+                            skins.push(SkinInfo {
+                                name: name.to_string(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => return Err(format!("读取目录失败: {}", e)),
+    }
+    
+    skins.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(skins)
+}
+
+/// Tauri命令：删除皮肤
+#[tauri::command]
+pub fn delete_skin(skins_dir: String, skin_name: String) -> Result<(), String> {
+    let skin_path = Path::new(&skins_dir).join(&skin_name);
+    
+    if !skin_path.exists() {
+        return Err(format!("皮肤不存在: {}", skin_path.display()));
+    }
+    
+    if !skin_path.is_dir() {
+        return Err(format!("路径不是目录: {}", skin_path.display()));
+    }
+    
+    match fs::remove_dir_all(&skin_path) {
+        Ok(_) => {
+            tracing::info!("删除皮肤成功: {:?}", skin_path);
+            Ok(())
+        },
+        Err(e) => {
+            tracing::error!("删除皮肤失败: {}", e);
+            Err(format!("删除皮肤失败: {}", e))
         }
     }
 }

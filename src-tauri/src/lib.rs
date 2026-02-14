@@ -112,6 +112,9 @@ pub fn run() {
             move_chart,
             create_chart_category,
             create_directory,
+            // 皮肤管理相关命令
+            list_skins,
+            delete_skin,
             // 校验和相关命令
             calculate_checksums,
             save_checksums_to_file,
@@ -121,7 +124,9 @@ pub fn run() {
             // 网络相关命令
             download_file_to_path,
             fetch_remote_hashes,
-            fetch_chart_list
+            fetch_chart_list,
+            fetch_github_skins,
+            download_skin_zip
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

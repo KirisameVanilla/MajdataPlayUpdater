@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Group, Text, Button, Badge, Stack, Select, Modal, ActionIcon, Grid, Accordion, LoadingOverlay, Image } from '@mantine/core';
+import { Container, Card, Group, Text, Button, Badge, Stack, Select, Modal, ActionIcon, Grid, Accordion, LoadingOverlay, Image, TextInput, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconTrash, IconFolderSymlink } from '@tabler/icons-react';
+import { IconTrash, IconFolderSymlink, IconPlus } from '@tabler/icons-react';
 import { invoke } from '@tauri-apps/api/core';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { ask } from '@tauri-apps/plugin-dialog';
@@ -42,9 +42,10 @@ function ChartImage({ path, hasBg, alt }: { path: string; hasBg: boolean; alt: s
 
 interface LocalChartsProps {
   onRefresh?: () => void;
+  refreshTrigger?: number;
 }
 
-export function LocalCharts({ onRefresh }: LocalChartsProps) {
+export function LocalCharts({ onRefresh, refreshTrigger }: LocalChartsProps) {
   const { defaultGameFolderPath } = usePathContext();
   const [categories, setCategories] = useState<string[]>([]);
   const [chartsByCategory, setChartsByCategory] = useState<Record<string, ChartInfo[]>>({});
@@ -52,10 +53,17 @@ export function LocalCharts({ onRefresh }: LocalChartsProps) {
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [chartToMove, setChartToMove] = useState<ChartInfo | null>(null);
   const [targetCategory, setTargetCategory] = useState<string | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     loadCharts();
   }, [defaultGameFolderPath]);
+
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      loadCharts();
+    }
+  }, [refreshTrigger]);
 
   const loadCharts = async () => {
     if (!defaultGameFolderPath) {
@@ -132,14 +140,35 @@ export function LocalCharts({ onRefresh }: LocalChartsProps) {
   };
 
   const handleMoveChart = async () => {
-    if (!defaultGameFolderPath || !chartToMove || !targetCategory) return;
+    if (!defaultGameFolderPath || !chartToMove) return;
+
+    // 确定目标分类
+    const finalCategory = targetCategory || newCategoryName.trim();
+    if (!finalCategory) {
+      notifications.show({
+        title: '错误',
+        message: '请选择或输入分类名称',
+        color: 'red',
+      });
+      return;
+    }
 
     try {
       const maichartsPath = `${defaultGameFolderPath}\\MaiCharts`;
+
+      // 如果是新分类，先创建
+      if (newCategoryName && !categories.includes(finalCategory)) {
+        await invoke('create_chart_category', {
+          maichartsDir: maichartsPath,
+          category: finalCategory,
+        });
+        setCategories([...categories, finalCategory]);
+      }
+
       await invoke('move_chart', {
         maichartsDir: maichartsPath,
         fromCategory: chartToMove.category,
-        toCategory: targetCategory,
+        toCategory: finalCategory,
         chartName: chartToMove.name,
       });
 
@@ -151,17 +180,18 @@ export function LocalCharts({ onRefresh }: LocalChartsProps) {
 
       // 只更新本地状态，不重新加载以保持 Accordion 展开状态
       setChartsByCategory(prev => {
-        const updatedChart = { ...chartToMove!, category: targetCategory };
+        const updatedChart = { ...chartToMove!, category: finalCategory };
         return {
           ...prev,
           [chartToMove!.category]: prev[chartToMove!.category].filter(c => c.name !== chartToMove!.name),
-          [targetCategory]: [...(prev[targetCategory] || []), updatedChart]
+          [finalCategory]: [...(prev[finalCategory] || []), updatedChart]
         };
       });
 
       setMoveModalOpen(false);
       setChartToMove(null);
       setTargetCategory(null);
+      setNewCategoryName('');
       onRefresh?.();
     } catch (error) {
       console.error('移动谱面失败:', error);
@@ -176,6 +206,7 @@ export function LocalCharts({ onRefresh }: LocalChartsProps) {
   const openMoveModal = (chart: ChartInfo) => {
     setChartToMove(chart);
     setTargetCategory(null);
+    setNewCategoryName('');
     setMoveModalOpen(true);
   };
 
@@ -279,19 +310,41 @@ export function LocalCharts({ onRefresh }: LocalChartsProps) {
           <Text size="sm">
             将谱面 <Text span fw={600}>{chartToMove?.name}</Text> 从 <Text span c="blue">{chartToMove?.category}</Text> 移动到：
           </Text>
+          
           <Select
-            label="目标分类"
-            placeholder="选择目标分类"
+            label="选择已有分类"
+            placeholder="选择分类"
             data={categories.filter(c => c !== chartToMove?.category)}
             value={targetCategory}
-            onChange={setTargetCategory}
+            onChange={(value) => {
+              setTargetCategory(value);
+              setNewCategoryName('');
+            }}
             searchable
+            clearable
           />
+          
+          <Divider label="或" labelPosition="center" />
+          
+          <TextInput
+            label="创建新分类"
+            placeholder="输入新分类名称"
+            value={newCategoryName}
+            onChange={(e) => {
+              setNewCategoryName(e.target.value);
+              setTargetCategory(null);
+            }}
+            leftSection={<IconPlus size={16} />}
+          />
+          
           <Group justify="flex-end" mt="md">
             <Button variant="default" onClick={() => setMoveModalOpen(false)}>
               取消
             </Button>
-            <Button onClick={handleMoveChart} disabled={!targetCategory}>
+            <Button
+              onClick={handleMoveChart}
+              disabled={!targetCategory && !newCategoryName.trim()}
+            >
               移动
             </Button>
           </Group>

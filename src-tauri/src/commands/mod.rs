@@ -20,7 +20,9 @@ pub use file_system::{
     delete_chart,
     move_chart,
     create_chart_category,
-    create_directory
+    create_directory,
+    list_skins,
+    delete_skin
 };
-pub use network::{download_file_to_path, fetch_remote_hashes, fetch_chart_list};
+pub use network::{download_file_to_path, fetch_remote_hashes, fetch_chart_list, fetch_github_skins, download_skin_zip};
 pub use zip::{extract_zip, download_and_extract};

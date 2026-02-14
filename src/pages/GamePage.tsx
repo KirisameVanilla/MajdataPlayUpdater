@@ -343,7 +343,7 @@ export function GamePage() {
 
   return (
     <Container size="xl" py="xl">
-      <div className="mb-8">
+      <div>
         <Title order={1} className="mb-2">
           游戏管理
         </Title>
@@ -352,7 +352,7 @@ export function GamePage() {
         </Text>
       </div>
 
-      <Card shadow="sm" padding="lg" radius="md" withBorder className="relative">
+      <Card mt='sm' shadow="sm" padding="lg" radius="md" withBorder className="relative">
         <LoadingOverlay visible={isChecking || isUpdating} />
 
         {defaultGameFolderPath && (
@@ -432,9 +432,9 @@ export function GamePage() {
       </Card>
 
       {hasGameExe && (
-        <Card shadow="sm" padding="lg" radius="md" withBorder mt="xl" className="relative">
+        <Card shadow="sm" padding="lg" radius="md" withBorder mt="sm" className="relative">
           <LoadingOverlay visible={isUpdating} />
-          <Title order={3} className="mb-4">
+          <Title order={3}>
             启动游戏
           </Title>
           

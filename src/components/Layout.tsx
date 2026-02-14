@@ -1,21 +1,18 @@
-import { AppShell, Burger, Group, Text } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { AppShell, Group, Text } from '@mantine/core';
 import { NavBar } from './NavBar';
+import iconSvg from '../assets/icon.svg';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const [opened, { toggle }] = useDisclosure();
-
   return (
     <AppShell
       header={{ height: 60 }}
       navbar={{
         width: 60,
         breakpoint: 'sm',
-        collapsed: { mobile: !opened },
       }}
       padding="md"
       className="h-screen"
@@ -23,7 +20,7 @@ export function Layout({ children }: LayoutProps) {
       <AppShell.Header className="border-gray-200 border-b">
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <img src={iconSvg} alt="Majdata Hub" style={{ width: 32, height: 32 }} />
             <Text size="xl" fw={700}>
               Majdata Hub
             </Text>

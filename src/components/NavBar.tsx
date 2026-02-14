@@ -1,5 +1,5 @@
 import { NavLink, ScrollArea } from '@mantine/core';
-import { IconHome, IconChartBar, IconPalette, IconSettings, IconBug, IconDeviceGamepad2 } from '@tabler/icons-react';
+import { IconHome, IconMusic, IconPalette, IconSettings, IconDeviceGamepad2 } from '@tabler/icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -8,10 +8,10 @@ import type { NavItem } from '../types';
 const navItems: NavItem[] = [
   { label: 'Home', icon: IconHome, path: '/' },
   { label: 'Game', icon: IconDeviceGamepad2, path: '/game' },
-  { label: 'Chart', icon: IconChartBar, path: '/chart' },
+  { label: 'Chart', icon: IconMusic, path: '/chart' },
   { label: 'Skin', icon: IconPalette, path: '/skin' },
   { label: 'Setting', icon: IconSettings, path: '/setting' },
-  { label: 'Debug', icon: IconBug, path: '/debug' },
+  // { label: 'Debug', icon: IconBug, path: '/debug' },
 ];
 
 export function NavBar() {

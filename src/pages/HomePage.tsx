@@ -1,102 +1,109 @@
-import { Container, Title, Text, Card, Grid, Group, Badge, ThemeIcon } from '@mantine/core';
-import { IconMusic, IconFiles, IconSettings, IconTrendingUp } from '@tabler/icons-react';
-
-const statsData = [
-  {
-    title: '谱面数量',
-    value: '0',
-    icon: IconMusic,
-    color: 'blue',
-    description: '总计谱面数',
-  },
-  {
-    title: '项目文件',
-    value: '0',
-    icon: IconFiles,
-    color: 'green',
-    description: '已管理文件',
-  },
-  {
-    title: '最近更新',
-    value: '--',
-    icon: IconTrendingUp,
-    color: 'orange',
-    description: '上次修改时间',
-  },
-  {
-    title: '配置',
-    value: '就绪',
-    icon: IconSettings,
-    color: 'violet',
-    description: '系统状态',
-  },
-];
+import { Container, Title, Text, Card, Group, Stack, Badge, ThemeIcon, Alert, Anchor, Divider } from '@mantine/core';
+import { IconAlertCircle, IconBrandGithub, IconInfoCircle } from '@tabler/icons-react';
+import iconSvg from '../assets/icon.svg';
 
 export function HomePage() {
   return (
     <Container size="xl" py="xl">
-      <div className="mb-8">
-        <Title order={1} className="mb-2">
-          欢迎来到 Majdata Hub
-        </Title>
-        <Text c="dimmed" size="lg">
+      {/* 头部标题 */}
+      <div className="text-center">
+        <Group justify="center" gap="md" className="mb-3">
+          <img src={iconSvg} alt="Majdata Hub" style={{ width: 48, height: 48 }} />
+          <Title order={1} style={{ fontSize: '2.5rem', fontWeight: 800 }}>
+            欢迎来到 Majdata Hub
+          </Title>
+        </Group>
+        <Text c="dimmed" size="xl">
           Majdata 小工具
         </Text>
+        <Group justify="center" gap="xs">
+          <Badge size="lg" variant="gradient" gradient={{ from: 'blue', to: 'cyan' }}>
+            开源免费
+          </Badge>
+          <Badge size="lg" variant="gradient" gradient={{ from: 'grape', to: 'violet' }}>
+            社区驱动
+          </Badge>
+        </Group>
       </div>
 
-      <Grid gutter="md">
-        {statsData.map((stat) => (
-          <Grid.Col key={stat.title} span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder className="h-full">
-              <Group justify="space-between" mb="xs">
-                <ThemeIcon size="xl" radius="md" variant="light" color={stat.color}>
-                  <stat.icon size={24} stroke={1.5} />
-                </ThemeIcon>
-                <Badge color={stat.color} variant="light">
-                  {stat.title}
-                </Badge>
-              </Group>
+      {/* 重要声明区域 */}
+      <div className="space-y-4">
+        <Alert mt='sm' icon={<IconAlertCircle size={20} />} title="重要提示" color="red" variant="filled">
+          <Text size="sm">
+            我们<strong>不提倡</strong>使用 MajdataPlay 游玩本家谱面，请支持街机游戏！
+          </Text>
+          <Text size="sm">
+            请勿将其他软件的游玩视频标为 MajdataPlay，但是当然欢迎你分享真 MajdataPlay 的游玩视频！
+          </Text>
+        </Alert>
 
-              <Text size="xl" fw={700} className="mb-2">
-                {stat.value}
-              </Text>
+        <Alert mt='sm' icon={<IconInfoCircle size={20} />} title="免责声明" color="yellow" variant="light">
+          <Text size="sm">
+            本软件为<strong>开源免费软件</strong>，开发者不做任何保证。使用本软件即表示您接受相关风险。
+          </Text>
+        </Alert>
+      </div>
 
-              <Text size="sm" c="dimmed">
-                {stat.description}
-              </Text>
-            </Card>
-          </Grid.Col>
-        ))}
-      </Grid>
+      {/* 项目信息和链接 */}
+      <Card mt='sm' shadow="sm" padding="lg" radius="md" withBorder>
+        <Group align="center">
+          <ThemeIcon size="lg" radius="md" variant="gradient" gradient={{ from: 'blue', to: 'cyan' }}>
+            <IconBrandGithub size={20} />
+          </ThemeIcon>
+          <Title order={3}>关于我们</Title>
+        </Group>
 
-      <Card shadow="sm" padding="lg" radius="md" withBorder className="mt-6">
-        <Title order={3} className="mb-4">
-          快速开始
-        </Title>
+        <Divider mt='sm' />
+
+        <Group mt='sm'>
+          <Anchor
+            href="https://github.com/TeamMajdata"
+            target="_blank"
+            rel="noopener noreferrer"
+            size="sm"
+            fw={600}
+          >
+            TeamMajdata
+          </Anchor>
+          <Text size="sm">
+            是一个非盈利性组织，核心理念是<strong>开源、社区驱动</strong>
+          </Text>
+        </Group>
+
+        <Divider mt='sm' />
+
         <div className="space-y-3">
-          <div className="bg-blue-50 p-4 border border-blue-200 rounded-lg">
-            <Text fw={600} className="mb-2">
-              导入谱面
-            </Text>
-            <Text size="sm" c="dimmed">
-              点击 Chart 页面开始导入和管理你的谱面文件
-            </Text>
-          </div>
-          <div className="bg-purple-50 p-4 border border-purple-200 rounded-lg">
-            <Text fw={600} className="mb-2">
-              自定义皮肤
-            </Text>
-            <Text size="sm" c="dimmed">
-              在 Skin 页面中管理和预览你的自定义皮肤资源
-            </Text>
-          </div>
-          <div className="bg-green-50 p-4 border border-green-200 rounded-lg">
-            <Text fw={600} className="mb-2">
-              配置设置
-            </Text>
-            <Text size="sm" c="dimmed">
-              根据你的需求调整工具的各项配置和偏好设置
-            </Text>
+          <div>
+            <Text size="sm" c="dimmed" className="mb-1">项目</Text>
+            <Stack gap="sm" align="flex-start">
+              <Anchor
+                href="https://github.com/LingFeng-bbben/MajdataPlay"
+                target="_blank"
+                rel="noopener noreferrer"
+                size="sm"
+                fw={600}
+              >
+                MajdataPlay
+              </Anchor>
+              <Anchor
+                href="https://github.com/kirisamevanilla/MajdataHub"
+                target="_blank"
+                rel="noopener noreferrer"
+                size="sm"
+                fw={600}
+              >
+                Majdata Hub
+              </Anchor>
+              <Anchor
+                href="https://github.com/LingFeng-bbben/Majdata-Online"
+                target="_blank"
+                rel="noopener noreferrer"
+                size="sm"
+                fw={600}
+              >
+                Majdata-Online
+              </Anchor>
+            </Stack>
           </div>
         </div>
       </Card>

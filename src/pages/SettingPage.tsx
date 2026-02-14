@@ -61,7 +61,7 @@ export function SettingPage() {
   return (
     <Container size="xl" py="xl">
       <div className="mb-8">
-        <Title order={1} className="mb-2">
+        <Title order={1}>
           设置
         </Title>
         <Text c="dimmed" size="lg">
@@ -69,7 +69,7 @@ export function SettingPage() {
         </Text>
       </div>
 
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Card shadow="sm" mt='sm' padding="lg" radius="md" withBorder>
         <Stack gap="md">
           <TextInput
             leftSection={<IconFolder size={18} />}

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Container, TextInput, Select, Card, Group, Text, Button, Badge, Stack, Grid, Modal, LoadingOverlay, Pagination, Image, Divider, Loader } from '@mantine/core';
+import { Container, TextInput, Select, Card, Group, Text, Button, Badge, Stack, Grid, Modal, LoadingOverlay, Pagination, Image, Divider, Loader, Checkbox, ScrollArea, Progress } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconDownload, IconSearch, IconPlus } from '@tabler/icons-react';
+import { IconDownload, IconSearch, IconPlus, IconCheckbox, IconSquare } from '@tabler/icons-react';
 import { invoke } from '@tauri-apps/api/core';
-import { join } from '@tauri-apps/api/path';
+import { listen } from '@tauri-apps/api/event';
 import { usePathContext } from '../contexts';
 
 const API_ROOT = 'https://majdata.net/api3/api';
@@ -36,6 +36,9 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
   const [targetCategory, setTargetCategory] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [selectedChartIds, setSelectedChartIds] = useState<Set<string>>(new Set());
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
 
   const ITEMS_PER_PAGE = 30;
 
@@ -49,6 +52,24 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
   useEffect(() => {
     loadCategories();
   }, [defaultGameFolderPath]);
+
+  // 监听下载进度事件
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
+    listen<{ current: number; total: number; chart_title: string }>('download-progress', (event) => {
+      setDownloadProgress({
+        current: event.payload.current,
+        total: event.payload.total,
+      });
+    }).then((unlistenFn) => {
+      unlisten = unlistenFn;
+    });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
 
   // 搜索防抖：延迟 500ms 后更新 debouncedSearch
   useEffect(() => {
@@ -117,11 +138,66 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
     setSelectedChart(chart);
     setTargetCategory(null);
     setNewCategoryName('');
+    setDownloadProgress({ current: 0, total: 0 });
     setDownloadModalOpen(true);
   };
 
+  const openBatchDownloadModal = () => {
+    if (selectedChartIds.size === 0) {
+      notifications.show({
+        title: '提示',
+        message: '请先选择要下载的谱面',
+        color: 'yellow',
+      });
+      return;
+    }
+    setSelectedChart(null);
+    setTargetCategory(null);
+    setNewCategoryName('');
+    setDownloadProgress({ current: 0, total: 0 });
+    setDownloadModalOpen(true);
+  };
+
+  const toggleSelectChart = (chartId: string) => {
+    setSelectedChartIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(chartId)) {
+        newSet.delete(chartId);
+      } else {
+        newSet.add(chartId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedChartIds.size === charts.length) {
+      setSelectedChartIds(new Set());
+    } else {
+      setSelectedChartIds(new Set(charts.map(c => c.id)));
+    }
+  };
+
+  const toggleBatchMode = () => {
+    setIsBatchMode(!isBatchMode);
+    if (isBatchMode) {
+      setSelectedChartIds(new Set());
+    }
+  };
+
+  const downloadSingleChart = async (chart: ChartSummary, finalCategory: string, maichartsPath: string) => {
+    // 调用Rust端批量下载命令（单个谱面）
+    await invoke('download_charts_batch', {
+      chartIds: [chart.id],
+      chartTitles: [chart.title],
+      maichartsDir: maichartsPath,
+      category: finalCategory,
+      proxy: null,
+    });
+  };
+
   const downloadChart = async () => {
-    if (!selectedChart || !defaultGameFolderPath) return;
+    if (!defaultGameFolderPath) return;
 
     // 确定目标分类
     const finalCategory = targetCategory || newCategoryName.trim();
@@ -147,49 +223,38 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
         setCategories([...categories, finalCategory]);
       }
 
-      const chartFolder = await join(maichartsPath, finalCategory, selectedChart.title);
+      // 批量下载
+      if (!selectedChart) {
+        const chartsToDownload = charts.filter(c => selectedChartIds.has(c.id));
+        setDownloadProgress({ current: 0, total: chartsToDownload.length });
 
-      // 创建谱面文件夹
-      await invoke('create_directory', { path: chartFolder });
-
-      // 下载文件
-      const files = [
-        { url: `${API_ROOT}/maichart/${selectedChart.id}/track`, name: 'track.mp3' },
-        { url: `${API_ROOT}/maichart/${selectedChart.id}/image?fullImage=true`, name: 'bg.jpg' },
-        { url: `${API_ROOT}/maichart/${selectedChart.id}/chart`, name: 'maidata.txt' },
-      ];
-
-      for (const file of files) {
-        try {
-          await invoke('download_file_to_path', {
-            url: file.url,
-            filePath: file.name,
-            targetDir: chartFolder,
-            proxy: null,
-          });
-        } catch (error) {
-          console.error(`下载 ${file.name} 失败:`, error);
-        }
-      }
-
-      // 尝试下载视频（可选）
-      try {
-        await invoke('download_file_to_path', {
-          url: `${API_ROOT}/maichart/${selectedChart.id}/video`,
-          filePath: 'pv.mp4',
-          targetDir: chartFolder,
+        // 调用Rust端批量下载命令
+        await invoke('download_charts_batch', {
+          chartIds: chartsToDownload.map(c => c.id),
+          chartTitles: chartsToDownload.map(c => c.title),
+          maichartsDir: maichartsPath,
+          category: finalCategory,
           proxy: null,
         });
-      } catch (error) {
-        // 视频是可选的，忽略错误
-        console.log('视频不存在或下载失败（正常现象）');
-      }
 
-      notifications.show({
-        title: '成功',
-        message: `谱面 "${selectedChart.title}" 已下载到 ${finalCategory} 分类`,
-        color: 'green',
-      });
+        notifications.show({
+          title: '成功',
+          message: `已成功下载 ${chartsToDownload.length} 个谱面到 ${finalCategory} 分类`,
+          color: 'green',
+        });
+
+        setSelectedChartIds(new Set());
+        setIsBatchMode(false);
+      } else {
+        // 单个下载
+        await downloadSingleChart(selectedChart, finalCategory, maichartsPath);
+
+        notifications.show({
+          title: '成功',
+          message: `谱面 "${selectedChart.title}" 已下载到 ${finalCategory} 分类`,
+          color: 'green',
+        });
+      }
 
       setDownloadModalOpen(false);
       onRefresh?.();
@@ -226,6 +291,39 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
             />
           </Group>
 
+          {!loading && charts.length > 0 && (
+            <Group justify="space-between">
+              <Group>
+                <Button
+                  variant={isBatchMode ? "filled" : "light"}
+                  leftSection={isBatchMode ? <IconCheckbox size={16} /> : <IconSquare size={16} />}
+                  onClick={toggleBatchMode}
+                >
+                  {isBatchMode ? '退出批量模式' : '批量选择'}
+                </Button>
+                {isBatchMode && (
+                  <>
+                    <Button
+                      variant="light"
+                      onClick={toggleSelectAll}
+                    >
+                      {selectedChartIds.size === charts.length ? '取消全选' : '全选'}
+                    </Button>
+                    <Badge size="lg">{selectedChartIds.size} / {charts.length} 已选</Badge>
+                  </>
+                )}
+              </Group>
+              {isBatchMode && selectedChartIds.size > 0 && (
+                <Button
+                  leftSection={<IconDownload size={16} />}
+                  onClick={openBatchDownloadModal}
+                >
+                  批量下载 ({selectedChartIds.size})
+                </Button>
+              )}
+            </Group>
+          )}
+
           {loading ? (
             <div style={{ position: 'relative', minHeight: 400 }}>
               <LoadingOverlay visible={true} />
@@ -235,7 +333,25 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
               <Grid gutter="sm">
                 {charts.map((chart) => (
                   <Grid.Col key={chart.id} span={{ base: 12, sm: 6, md: 3, lg: 2.4 }}>
-                    <Card shadow="sm" padding="sm" radius="md" withBorder>
+                    <Card
+                      shadow="sm"
+                      padding="sm"
+                      radius="md"
+                      withBorder
+                      style={{
+                        cursor: isBatchMode ? 'pointer' : 'default',
+                        backgroundColor: selectedChartIds.has(chart.id) ? 'var(--mantine-color-blue-light)' : undefined,
+                      }}
+                      onClick={() => isBatchMode && toggleSelectChart(chart.id)}
+                    >
+                      {isBatchMode && (
+                        <Checkbox
+                          checked={selectedChartIds.has(chart.id)}
+                          onChange={() => toggleSelectChart(chart.id)}
+                          style={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
                       <Card.Section>
                         <Image
                           src={`${API_ROOT}/maichart/${chart.id}/image`}
@@ -265,15 +381,17 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
                           ))}
                         </Group>
 
-                        <Button
-                          fullWidth
-                          mt="xs"
-                          size="xs"
-                          leftSection={<IconDownload size={14} />}
-                          onClick={() => openDownloadModal(chart)}
-                        >
-                          下载
-                        </Button>
+                        {!isBatchMode && (
+                          <Button
+                            fullWidth
+                            mt="xs"
+                            size="xs"
+                            leftSection={<IconDownload size={14} />}
+                            onClick={() => openDownloadModal(chart)}
+                          >
+                            下载
+                          </Button>
+                        )}
                       </Stack>
                     </Card>
                   </Grid.Col>
@@ -303,12 +421,47 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
       <Modal
         opened={downloadModalOpen}
         onClose={() => setDownloadModalOpen(false)}
-        title="下载谱面"
+        title={selectedChart ? "下载谱面" : "批量下载谱面"}
+        size={selectedChart ? "md" : "lg"}
       >
         <Stack gap="md">
-          <Text size="sm">
-            下载谱面: <Text span fw={600}>{selectedChart?.title}</Text>
-          </Text>
+          {selectedChart ? (
+            <Text size="sm">
+              下载谱面: <Text span fw={600}>{selectedChart.title}</Text>
+            </Text>
+          ) : (
+            <>
+              <Text size="sm">
+                将下载 <Text span fw={600} c="blue">{selectedChartIds.size}</Text> 个谱面
+              </Text>
+              <ScrollArea h={200} type="auto">
+                <Stack gap="xs">
+                  {charts.filter(c => selectedChartIds.has(c.id)).map(chart => (
+                    <Card key={chart.id} padding="xs" withBorder>
+                      <Group gap="xs">
+                        <div style={{ flex: 1 }}>
+                          <Text size="xs" fw={500} lineClamp={1}>{chart.title}</Text>
+                          <Text size="xs" c="dimmed" lineClamp={1}>{chart.artist}</Text>
+                        </div>
+                      </Group>
+                    </Card>
+                  ))}
+                </Stack>
+              </ScrollArea>
+            </>
+          )}
+          
+          {downloading && downloadProgress.total > 0 && (
+            <div>
+              <Text size="sm" mb="xs">
+                下载进度: {downloadProgress.current} / {downloadProgress.total}
+              </Text>
+              <Progress
+                value={(downloadProgress.current / downloadProgress.total) * 100}
+                animated
+              />
+            </div>
+          )}
           
           <Select
             label="选择已有分类"

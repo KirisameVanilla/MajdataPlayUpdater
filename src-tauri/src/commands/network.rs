@@ -2,6 +2,7 @@ use std::path::Path;
 use tokio::fs;
 use crate::models::FileChecksum;
 use serde::{Deserialize, Serialize};
+use tauri::Emitter;
 
 /// 谱面摘要信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -356,4 +357,106 @@ pub async fn download_skin_zip(
     
     tracing::info!("皮肤下载并解压完成");
     Ok(extract_result)
+}
+
+/// 下载进度事件
+#[derive(Debug, Clone, Serialize)]
+struct DownloadProgress {
+    current: usize,
+    total: usize,
+    chart_title: String,
+}
+
+/// Tauri命令：批量下载谱面
+#[tauri::command]
+pub async fn download_charts_batch(
+    app: tauri::AppHandle,
+    chart_ids: Vec<String>,
+    chart_titles: Vec<String>,
+    maicharts_dir: String,
+    category: String,
+    proxy: Option<String>
+) -> Result<String, String> {
+    tracing::info!("批量下载谱面: {} 个谱面到分类 '{}'", chart_ids.len(), category);
+    
+    if chart_ids.len() != chart_titles.len() {
+        return Err("谱面ID和标题数量不匹配".to_string());
+    }
+    
+    let api_root = "https://majdata.net/api3/api";
+    let total = chart_ids.len();
+    let mut success_count = 0;
+    
+    for (index, (chart_id, chart_title)) in chart_ids.iter().zip(chart_titles.iter()).enumerate() {
+        tracing::info!("下载谱面 {}/{}: {}", index + 1, total, chart_title);
+        
+        // 发送进度事件
+        let _ = app.emit("download-progress", DownloadProgress {
+            current: index,
+            total,
+            chart_title: chart_title.clone(),
+        });
+        
+        // 创建谱面文件夹路径
+        let chart_folder = Path::new(&maicharts_dir)
+            .join(&category)
+            .join(chart_title);
+        
+        // 确保文件夹存在
+        if let Err(e) = tokio::fs::create_dir_all(&chart_folder).await {
+            tracing::error!("创建谱面文件夹失败: {}", e);
+            continue;
+        }
+        
+        // 下载文件列表
+        let files = vec![
+            ("track.mp3", format!("{}/maichart/{}/track", api_root, chart_id)),
+            ("bg.jpg", format!("{}/maichart/{}/image?fullImage=true", api_root, chart_id)),
+            ("maidata.txt", format!("{}/maichart/{}/chart", api_root, chart_id)),
+        ];
+        
+        let mut chart_success = true;
+        
+        // 下载基础文件
+        for (file_name, url) in files {
+            let file_path = chart_folder.join(file_name);
+            match download_file_impl(
+                url,
+                file_path.to_string_lossy().to_string(),
+                proxy.clone()
+            ).await {
+                Ok(_) => tracing::debug!("  ✓ {}", file_name),
+                Err(e) => {
+                    tracing::warn!("  ✗ {} 下载失败: {}", file_name, e);
+                    chart_success = false;
+                }
+            }
+        }
+        
+        // 尝试下载视频（可选）
+        let video_url = format!("{}/maichart/{}/video", api_root, chart_id);
+        let video_path = chart_folder.join("pv.mp4");
+        match download_file_impl(
+            video_url,
+            video_path.to_string_lossy().to_string(),
+            proxy.clone()
+        ).await {
+            Ok(_) => tracing::debug!("  ✓ pv.mp4 (可选)"),
+            Err(_) => tracing::debug!("  - pv.mp4 不存在或下载失败（正常）"),
+        }
+        
+        if chart_success {
+            success_count += 1;
+        }
+    }
+    
+    // 发送完成事件
+    let _ = app.emit("download-progress", DownloadProgress {
+        current: total,
+        total,
+        chart_title: String::new(),
+    });
+    
+    tracing::info!("批量下载完成: 成功 {}/{}", success_count, total);
+    Ok(format!("成功下载 {}/{} 个谱面", success_count, total))
 }

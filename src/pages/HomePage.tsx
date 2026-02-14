@@ -34,7 +34,7 @@ const statsData = [
 
 export function HomePage() {
   return (
-    <Container size="xl" py="xl" className="h-full">
+    <Container size="xl" py="xl">
       <div className="mb-8">
         <Title order={1} className="mb-2">
           欢迎来到 Majdata Hub

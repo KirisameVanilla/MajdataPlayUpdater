@@ -35,7 +35,7 @@ export function Layout({ children }: LayoutProps) {
         <NavBar />
       </AppShell.Navbar>
 
-      <AppShell.Main className="bg-white overflow-y-auto">
+      <AppShell.Main className="bg-white" style={{ overflow: 'auto', maxHeight: 'calc(100vh - 60px)' }}>
         {children}
       </AppShell.Main>
     </AppShell>

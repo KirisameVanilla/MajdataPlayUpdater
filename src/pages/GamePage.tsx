@@ -342,7 +342,7 @@ export function GamePage() {
   };
 
   return (
-    <Container size="xl" py="xl" className="h-full">
+    <Container size="xl" py="xl">
       <div className="mb-8">
         <Title order={1} className="mb-2">
           游戏管理
@@ -432,7 +432,7 @@ export function GamePage() {
       </Card>
 
       {hasGameExe && (
-        <Card shadow="sm" padding="lg" radius="md" withBorder className="relative mt-6">
+        <Card shadow="sm" padding="lg" radius="md" withBorder mt="xl" className="relative">
           <LoadingOverlay visible={isUpdating} />
           <Title order={3} className="mb-4">
             启动游戏

@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  push:
+    paths:
+      - 'src-tauri/tauri.conf.json'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tauri.conf.json
+        id: version
+        shell: pwsh
+        run: |
+          $config = Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json
+          $version = $config.version
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "Version: $version"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$version" -m "Release v$version"
+          git push origin "v$version"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: Majdata Hub v${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Get MSI files
+        id: msi_files
+        shell: pwsh
+        run: |
+          $msiPath = "src-tauri/target/release/bundle/msi"
+          if (Test-Path $msiPath) {
+            $files = Get-ChildItem -Path $msiPath -File
+            $fileList = $files | ForEach-Object { $_.FullName }
+            echo "Files found: $($files.Name -join ', ')"
+            echo "files=$($fileList -join ';')" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "No MSI directory found"
+            echo "files=" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Get NSIS files
+        id: nsis_files
+        shell: pwsh
+        run: |
+          $nsisPath = "src-tauri/target/release/bundle/nsis"
+          if (Test-Path $nsisPath) {
+            $files = Get-ChildItem -Path $nsisPath -File
+            $fileList = $files | ForEach-Object { $_.FullName }
+            echo "Files found: $($files.Name -join ', ')"
+            echo "files=$($fileList -join ';')" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "No NSIS directory found"
+            echo "files=" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Upload MSI files to Release
+        if: steps.msi_files.outputs.files != ''
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $files = "${{ steps.msi_files.outputs.files }}" -split ';'
+          foreach ($file in $files) {
+            if ($file -and (Test-Path $file)) {
+              $fileName = Split-Path $file -Leaf
+              echo "Uploading $fileName..."
+              gh release upload v${{ steps.version.outputs.version }} "$file" --clobber
+            }
+          }
+
+      - name: Upload NSIS files to Release
+        if: steps.nsis_files.outputs.files != ''
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $files = "${{ steps.nsis_files.outputs.files }}" -split ';'
+          foreach ($file in $files) {
+            if ($file -and (Test-Path $file)) {
+              $fileName = Split-Path $file -Leaf
+              echo "Uploading $fileName..."
+              gh release upload v${{ steps.version.outputs.version }} "$file" --clobber
+            }
+          }

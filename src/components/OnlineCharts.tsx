@@ -232,32 +232,30 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
             </div>
           ) : (
             <>
-              <Grid gutter="md">
+              <Grid gutter="sm">
                 {charts.map((chart) => (
-                  <Grid.Col key={chart.id} span={{ base: 12, sm: 6, md: 4 }}>
-                    <Card shadow="sm" padding="lg" radius="md" withBorder>
+                  <Grid.Col key={chart.id} span={{ base: 12, sm: 6, md: 3, lg: 2.4 }}>
+                    <Card shadow="sm" padding="sm" radius="md" withBorder>
                       <Card.Section>
                         <Image
                           src={`${API_ROOT}/maichart/${chart.id}/image`}
-                          height={160}
+                          height={100}
                           alt={chart.title}
                           fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23ddd'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E"
                         />
                       </Card.Section>
 
-                      <Stack gap="xs" mt="md">
-                        <Text fw={500} size="sm" lineClamp={2}>
+                      <Stack gap="xs" mt="sm">
+                        <Text fw={500} size="xs" lineClamp={1}>
                           {chart.title}
                         </Text>
                         <Text size="xs" c="dimmed" lineClamp={1}>
                           {chart.artist}
                         </Text>
-                        <Group gap="xs">
-                          <Text size="xs" c="dimmed">
-                            谱师: {chart.designer}
-                          </Text>
-                        </Group>
-                        <Group gap="xs">
+                        <Text size="xs" c="dimmed" lineClamp={1}>
+                          谱师: {chart.designer}
+                        </Text>
+                        <Group gap={4}>
                           {chart.levels && chart.levels.map((level, idx) => (
                             level && level.trim() !== '' ? (
                               <Badge key={idx} size="xs" variant="dot">
@@ -270,7 +268,8 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
                         <Button
                           fullWidth
                           mt="xs"
-                          leftSection={<IconDownload size={16} />}
+                          size="xs"
+                          leftSection={<IconDownload size={14} />}
                           onClick={() => openDownloadModal(chart)}
                         >
                           下载

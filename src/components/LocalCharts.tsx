@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Group, Text, Button, Badge, Stack, Select, Modal, ActionIcon, Grid, Accordion, LoadingOverlay } from '@mantine/core';
+import { Container, Card, Group, Text, Button, Badge, Stack, Select, Modal, ActionIcon, Grid, Accordion, LoadingOverlay, Image } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconTrash, IconFolderSymlink, IconMusic, IconPhoto, IconFileText, IconVideo } from '@tabler/icons-react';
+import { IconTrash, IconFolderSymlink } from '@tabler/icons-react';
 import { invoke } from '@tauri-apps/api/core';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import { ask } from '@tauri-apps/plugin-dialog';
 import { usePathContext } from '../contexts';
 
@@ -13,6 +14,30 @@ interface ChartInfo {
   has_track: boolean;
   has_maidata: boolean;
   has_video: boolean;
+}
+
+// 单独的图片组件，用于处理 jpg/png 回退
+function ChartImage({ path, hasBg, alt }: { path: string; hasBg: boolean; alt: string }) {
+  const [imgSrc, setImgSrc] = useState(convertFileSrc(`${path}\\bg.jpg`));
+  const [imgError, setImgError] = useState(false);
+
+  const handleError = () => {
+    if (imgSrc.includes('bg.jpg')) {
+      setImgSrc(convertFileSrc(`${path}\\bg.png`));
+    } else {
+      setImgError(true);
+    }
+  };
+
+  return (
+    <Image
+      src={hasBg && !imgError ? imgSrc : undefined}
+      height={100}
+      alt={alt}
+      onError={handleError}
+      fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23ddd'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%23999'%3ENo Image%3C/text%3E%3C/svg%3E"
+    />
+  );
 }
 
 interface LocalChartsProps {
@@ -189,60 +214,49 @@ export function LocalCharts({ onRefresh }: LocalChartsProps) {
                   </Group>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <Grid gutter="md">
-                    {chartsByCategory[category]?.map(chart => (
-                      <Grid.Col key={chart.name} span={{ base: 12, sm: 6, md: 4 }}>
-                        <Card shadow="sm" padding="lg" radius="md" withBorder>
-                          <Stack gap="xs">
-                            <Text fw={500} size="sm" lineClamp={2}>
-                              {chart.name}
-                            </Text>
+                  <Grid gutter="sm">
+                    {chartsByCategory[category]?.map(chart => {
+                      const chartPath = `${defaultGameFolderPath}\\MaiCharts\\${category}\\${chart.name}`;
+                      
+                      return (
+                        <Grid.Col key={chart.name} span={{ base: 12, sm: 6, md: 3, lg: 2.4 }}>
+                          <Card shadow="sm" padding="sm" radius="md" withBorder>
+                            <Card.Section>
+                              <ChartImage path={chartPath} hasBg={chart.has_bg} alt={chart.name} />
+                            </Card.Section>
 
-                            <Group gap="xs">
-                              {chart.has_track && (
-                                <Badge size="xs" color="blue" leftSection={<IconMusic size={12} />}>
-                                  音频
-                                </Badge>
-                              )}
-                              {chart.has_bg && (
-                                <Badge size="xs" color="green" leftSection={<IconPhoto size={12} />}>
-                                  背景
-                                </Badge>
-                              )}
-                              {chart.has_maidata && (
-                                <Badge size="xs" color="orange" leftSection={<IconFileText size={12} />}>
-                                  谱面
-                                </Badge>
-                              )}
-                              {chart.has_video && (
-                                <Badge size="xs" color="purple" leftSection={<IconVideo size={12} />}>
-                                  视频
-                                </Badge>
-                              )}
-                            </Group>
+                            <Stack gap="xs" mt="sm">
+                              <Text fw={500} size="xs" lineClamp={1}>
+                                {chart.name}
+                              </Text>
 
-                            <Group gap="xs" mt="xs">
-                              <ActionIcon
-                                color="blue"
-                                variant="light"
-                                onClick={() => openMoveModal(chart)}
-                                title="移动到其他分类"
-                              >
-                                <IconFolderSymlink size={18} />
-                              </ActionIcon>
-                              <ActionIcon
-                                color="red"
-                                variant="light"
-                                onClick={() => handleDeleteChart(chart)}
-                                title="删除谱面"
-                              >
-                                <IconTrash size={18} />
-                              </ActionIcon>
-                            </Group>
-                          </Stack>
-                        </Card>
-                      </Grid.Col>
-                    ))}
+                              <Group gap={4}>
+                                <ActionIcon
+                                  size="sm"
+                                  color="blue"
+                                  variant="light"
+                                  onClick={() => openMoveModal(chart)}
+                                  title="移动到其他分类"
+                                  style={{ flex: 1 }}
+                                >
+                                  <IconFolderSymlink size={16} />
+                                </ActionIcon>
+                                <ActionIcon
+                                  size="sm"
+                                  color="red"
+                                  variant="light"
+                                  onClick={() => handleDeleteChart(chart)}
+                                  title="删除谱面"
+                                  style={{ flex: 1 }}
+                                >
+                                  <IconTrash size={16} />
+                                </ActionIcon>
+                              </Group>
+                            </Stack>
+                          </Card>
+                        </Grid.Col>
+                      );
+                    })}
                   </Grid>
                   {chartsByCategory[category]?.length === 0 && (
                     <Text c="dimmed" ta="center" py="xl">

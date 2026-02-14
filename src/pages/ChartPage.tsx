@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Title, Text, Tabs, Alert, Button, Group } from '@mantine/core';
+import { Container, Title, Text, Tabs, Alert, Button } from '@mantine/core';
 import { IconAlertCircle, IconFolder, IconCloud, IconDownload } from '@tabler/icons-react';
 import { invoke } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';

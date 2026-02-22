@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Title, Text, Button, Card, Progress, Alert, List, LoadingOverlay, Select } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconRefresh, IconCheck, IconAlertCircle, IconPlayerPlay } from '@tabler/icons-react';
-import { usePathContext } from '../contexts';
+import { usePathContext, useDownloadContext } from '../contexts';
 import { calculateChecksums, FileChecksum } from '../utils/hash';
 import { normalizePath } from '../types';
 import { invoke } from '@tauri-apps/api/core';
@@ -20,12 +20,9 @@ interface LaunchOption {
 
 export function GamePage() {
   const { defaultGameFolderPath } = usePathContext();
+  const { isDownloading, downloadProgress, setIsDownloading, setDownloadProgress, isUpdating, updateList, setIsUpdating, setUpdateList } = useDownloadContext();
   const [hasGameExe, setHasGameExe] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [updateList, setUpdateList] = useState<FileChecksum[]>([]);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [launchOptions, setLaunchOptions] = useState<LaunchOption[]>([]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isLaunching, setIsLaunching] = useState(false);

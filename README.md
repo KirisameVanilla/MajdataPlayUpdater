@@ -65,9 +65,9 @@
 
 ### 前置要求
 
-- **Node.js** 18+ (推荐使用 LTS 版本)
-- **pnpm** (包管理器)
-- **Rust** 1.70+ (用于构建 Tauri 应用)
+- **Node.js**
+- **pnpm**
+- **Rust** 环境配置请参照 [Tauri 官方文档](https://v2.tauri.app/zh-cn/start/prerequisites/#system-dependencies)
 
 ### 开发环境配置
 

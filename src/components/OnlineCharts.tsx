@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Container, TextInput, Select, Card, Group, Text, Button, Badge, Stack, Grid, Modal, LoadingOverlay, Pagination, Image, Divider, Loader, Checkbox, ScrollArea, Progress } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconDownload, IconSearch, IconPlus, IconCheckbox, IconSquare } from '@tabler/icons-react';
+import { IconDownload, IconSearch, IconPlus, IconCheckbox, IconSquare, IconRefresh } from '@tabler/icons-react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { usePathContext } from '../contexts';
@@ -185,6 +185,25 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
     }
   };
 
+  const clearCacheAndRefresh = async () => {
+    try {
+      await invoke('clear_api_cache');
+      notifications.show({
+        title: '缓存已清除',
+        message: '正在重新加载谱面列表…',
+        color: 'blue',
+      });
+      await searchCharts();
+    } catch (error) {
+      console.error('清除缓存失败:', error);
+      notifications.show({
+        title: '错误',
+        message: '清除缓存失败: ' + String(error),
+        color: 'red',
+      });
+    }
+  };
+
   const downloadSingleChart = async (chart: ChartSummary, finalCategory: string, maichartsPath: string) => {
     // 调用Rust端批量下载命令（单个谱面）
     await invoke('download_charts_batch', {
@@ -300,6 +319,14 @@ export function OnlineCharts({ onRefresh }: OnlineChartsProps) {
                   onClick={toggleBatchMode}
                 >
                   {isBatchMode ? '退出批量模式' : '批量选择'}
+                </Button>
+                <Button
+                  variant="light"
+                  color="gray"
+                  leftSection={<IconRefresh size={16} />}
+                  onClick={clearCacheAndRefresh}
+                >
+                  清除缓存
                 </Button>
                 {isBatchMode && (
                   <>

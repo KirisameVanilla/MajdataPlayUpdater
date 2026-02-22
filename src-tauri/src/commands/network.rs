@@ -1,8 +1,29 @@
 use std::path::Path;
+use std::collections::HashMap;
+use std::sync::{OnceLock, Mutex};
 use tokio::fs;
 use crate::models::FileChecksum;
 use serde::{Deserialize, Serialize};
 use tauri::Emitter;
+
+/// API 响应缓存（URL → 响应体文本）
+static API_CACHE: OnceLock<Mutex<HashMap<String, String>>> = OnceLock::new();
+
+fn get_cache() -> &'static Mutex<HashMap<String, String>> {
+    API_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Tauri命令：清除所有 API 缓存
+#[tauri::command]
+pub fn clear_api_cache() -> Result<(), String> {
+    let mut cache = get_cache()
+        .lock()
+        .map_err(|e| format!("锁定缓存失败: {}", e))?;
+    let count = cache.len();
+    cache.clear();
+    tracing::info!("已清除 API 缓存，共 {} 条记录", count);
+    Ok(())
+}
 
 /// 谱面摘要信息
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -181,6 +202,19 @@ pub async fn fetch_chart_list(
         page,
         urlencoding::encode(&search)
     );
+
+    // 先查缓存
+    {
+        let cache = get_cache()
+            .lock()
+            .map_err(|e| format!("锁定缓存失败: {}", e))?;
+        if let Some(cached_text) = cache.get(&url) {
+            tracing::info!("[缓存命中] {}", url);
+            let charts: Vec<ChartSummary> = serde_json::from_str(cached_text)
+                .map_err(|e| format!("解析缓存 JSON 失败: {}", e))?;
+            return Ok(charts);
+        }
+    }
     
     let response = client.get(&url)
         .send()
@@ -225,6 +259,15 @@ pub async fn fetch_chart_list(
             );
             format!("Failed to parse chart list JSON: {}", e)
         })?;
+
+    // 存入缓存
+    {
+        let mut cache = get_cache()
+            .lock()
+            .map_err(|e| format!("锁定缓存失败: {}", e))?;
+        cache.insert(url.clone(), response_text);
+        tracing::info!("[缓存存储] {} （当前缓存条数: {}）", url, cache.len());
+    }
     
     let elapsed = start_time.elapsed();
     tracing::info!("获取谱面列表成功: {} 个谱面, {:.2}s", charts.len(), elapsed.as_secs_f64());

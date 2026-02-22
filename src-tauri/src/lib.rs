@@ -127,7 +127,8 @@ pub fn run() {
             fetch_chart_list,
             fetch_github_skins,
             download_skin_zip,
-            download_charts_batch
+            download_charts_batch,
+            clear_api_cache
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
